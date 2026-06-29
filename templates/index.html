@@ -85,6 +85,7 @@
                 <select class="form-select-custom" id="statusSelect" name="status">
                     <option value="전체" {% if filters.status == '전체' %}selected{% endif %}>전체 상태</option>
                     <option value="모집중" {% if filters.status == '모집중' %}selected{% endif %}>모집중</option>
+                    <option value="마감임박" {% if filters.status == '마감임박' %}selected{% endif %}>마감임박</option>
                     <option value="마감완료" {% if filters.status == '마감완료' %}selected{% endif %}>마감완료</option>
                 </select>
             </div>
@@ -122,38 +123,46 @@
 
         <!-- KPI Statistic Metric Cards -->
         <section class="stats-grid">
-            <div class="stat-card stat-card-primary">
-                <div class="stat-title">수집된 총 사업 공고</div>
-                <div class="stat-value">{{ stats.total }}건</div>
-                <div class="stat-description">
-                    <i class="fa-solid fa-database text-primary"></i>
-                    <span>로컬 DB 저장 기준</span>
+            <a href="/?sido={{ filters.sido }}&sigungu={{ filters.sigungu }}&delivery_type={{ filters.delivery_type }}&keyword={{ filters.keyword }}&status=전체" style="text-decoration: none; display: block;">
+                <div class="stat-card stat-card-primary">
+                    <div class="stat-title">수집된 총 사업 공고</div>
+                    <div class="stat-value">{{ stats.total }}건</div>
+                    <div class="stat-description">
+                        <i class="fa-solid fa-database text-primary"></i>
+                        <span>로컬 DB 저장 기준</span>
+                    </div>
                 </div>
-            </div>
-            <div class="stat-card stat-card-success">
-                <div class="stat-title">현재 모집 진행 중</div>
-                <div class="stat-value">{{ stats.active }}건</div>
-                <div class="stat-description">
-                    <i class="fa-solid fa-circle-check text-success"></i>
-                    <span>신청 즉시 접수 가능</span>
+            </a>
+            <a href="/?sido={{ filters.sido }}&sigungu={{ filters.sigungu }}&delivery_type={{ filters.delivery_type }}&keyword={{ filters.keyword }}&status=모집중" style="text-decoration: none; display: block;">
+                <div class="stat-card stat-card-success">
+                    <div class="stat-title">현재 모집 진행 중</div>
+                    <div class="stat-value">{{ stats.active }}건</div>
+                    <div class="stat-description">
+                        <i class="fa-solid fa-circle-check text-success"></i>
+                        <span>신청 즉시 접수 가능</span>
+                    </div>
                 </div>
-            </div>
-            <div class="stat-card stat-card-warning">
-                <div class="stat-title">마감 임박 / 조기소진</div>
-                <div class="stat-value">{{ stats.closing }}건</div>
-                <div class="stat-description">
-                    <i class="fa-solid fa-clock text-warning"></i>
-                    <span>신청 서류 준비 권장</span>
+            </a>
+            <a href="/?sido={{ filters.sido }}&sigungu={{ filters.sigungu }}&delivery_type={{ filters.delivery_type }}&keyword={{ filters.keyword }}&status=마감임박" style="text-decoration: none; display: block;">
+                <div class="stat-card stat-card-warning">
+                    <div class="stat-title">마감 임박 / 조기소진</div>
+                    <div class="stat-value">{{ stats.closing }}건</div>
+                    <div class="stat-description">
+                        <i class="fa-solid fa-clock text-warning"></i>
+                        <span>신청 서류 준비 권장</span>
+                    </div>
                 </div>
-            </div>
-            <div class="stat-card stat-card-secondary">
-                <div class="stat-title">직접 지급 예산 비율</div>
-                <div class="stat-value">{{ stats.direct_pct }}%</div>
-                <div class="stat-description">
-                    <i class="fa-solid fa-wallet text-secondary"></i>
-                    <span>소상공인 계좌 직접 지급</span>
+            </a>
+            <a href="/?sido={{ filters.sido }}&sigungu={{ filters.sigungu }}&status={{ filters.status }}&keyword={{ filters.keyword }}&delivery_type=직접" style="text-decoration: none; display: block;">
+                <div class="stat-card stat-card-secondary">
+                    <div class="stat-title">직접 지급 예산 비율</div>
+                    <div class="stat-value">{{ stats.direct_pct }}%</div>
+                    <div class="stat-description">
+                        <i class="fa-solid fa-wallet text-secondary"></i>
+                        <span>소상공인 계좌 직접 지급</span>
+                    </div>
                 </div>
-            </div>
+            </a>
         </section>
 
         <!-- Program List Section -->

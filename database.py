@@ -446,8 +446,13 @@ def get_all_programs(filters=None):
             query += f" AND budget_delivery_type {like_keyword} {placeholder}"
             params.append(f"%{filters['delivery_type']}%")
         if filters.get('status') and filters.get('status') != '전체':
-            query += f" AND status = {placeholder}"
-            params.append(filters['status'])
+            if filters['status'] == '마감임박':
+                like_keyword = 'ILIKE' if IS_POSTGRES else 'LIKE'
+                query += f" AND (status {like_keyword} {placeholder} OR deadline {like_keyword} {placeholder} OR budget_size {like_keyword} {placeholder})"
+                params.extend(["%임박%", "%조기%", "%소진%"])
+            else:
+                query += f" AND status = {placeholder}"
+                params.append(filters['status'])
         if filters.get('keyword'):
             like_keyword = 'ILIKE' if IS_POSTGRES else 'LIKE'
             query += f" AND (title {like_keyword} {placeholder} OR content {like_keyword} {placeholder} OR organization {like_keyword} {placeholder})"
