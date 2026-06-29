@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>소상공인 지원사업 모니터링 시스템</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Custom Design CSS -->
+    <link href="/static/css/main.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="dashboard-wrapper">
+    <!-- Sidebar Filters -->
+    <aside class="sidebar">
+        <div class="brand-section">
+            <div class="brand-title">
+                <i class="fa-solid fa-earth-asia text-primary"></i>
+                <span>지자체 소상공인 모니터</span>
+            </div>
+            <div class="brand-subtitle">도·시·군 지원사업 수집 및 필터링 시스템</div>
+        </div>
+
+        <form action="/" method="GET" id="filterForm">
+            <div class="filter-section-title">통합 검색 및 필터</div>
+
+            <!-- Keyword Search -->
+            <div class="form-group-custom">
+                <label class="form-label-custom" for="keyword">키워드 검색</label>
+                <div class="position-relative">
+                    <input type="text" class="form-input-custom" id="keyword" name="keyword" placeholder="사업명, 기관명 등 입력..." value="{{ filters.keyword }}">
+                </div>
+            </div>
+
+            <!-- Sido (Province) Filter -->
+            <div class="form-group-custom">
+                <label class="form-label-custom" for="sidoSelect">시/도 (광역지자체)</label>
+                <select class="form-select-custom" id="sidoSelect" name="sido">
+                    <option value="전체">전체 (전국)</option>
+                    {% for s in sidos %}
+                    <option value="{{ s }}" {% if filters.sido == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Sigungu (City/County/District) Filter -->
+            <div class="form-group-custom">
+                <label class="form-label-custom" for="sigunguSelect">시/군/구 (기초지자체)</label>
+                <select class="form-select-custom" id="sigunguSelect" name="sigungu">
+                    <option value="전체">전체 (시/군/구)</option>
+                    <!-- Dynamically populated via JS -->
+                </select>
+            </div>
+
+            <!-- Budget Delivery Type Filter -->
+            <div class="form-group-custom">
+                <label class="form-label-custom" for="deliveryTypeSelect">예산 집행 구조</label>
+                <select class="form-select-custom" id="deliveryTypeSelect" name="delivery_type">
+                    <option value="전체" {% if filters.delivery_type == '전체' %}selected{% endif %}>전체 방식</option>
+                    <option value="직접" {% if filters.delivery_type == '직접' %}selected{% endif %}>지자체 직접 지급</option>
+                    <option value="위탁" {% if filters.delivery_type == '위탁' %}selected{% endif %}>관리기관 위탁 지급</option>
+                </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="form-group-custom">
+                <label class="form-label-custom" for="statusSelect">진행 상태</label>
+                <select class="form-select-custom" id="statusSelect" name="status">
+                    <option value="전체" {% if filters.status == '전체' %}selected{% endif %}>전체 상태</option>
+                    <option value="모집중" {% if filters.status == '모집중' %}selected{% endif %}>모집중</option>
+                    <option value="마감완료" {% if filters.status == '마감완료' %}selected{% endif %}>마감완료</option>
+                </select>
+            </div>
+
+            <!-- Buttons -->
+            <button type="submit" class="btn btn-premium-primary w-100 justify-content-center">
+                <i class="fa-solid fa-filter"></i> 필터 적용하기
+            </button>
+            
+            <button type="button" class="btn-sidebar-reset" onclick="resetFilters()">
+                <i class="fa-solid fa-rotate-left"></i> 필터 초기화
+            </button>
+        </form>
+    </aside>
+
+    <!-- Main Dashboard Area -->
+    <main class="main-content">
+        <!-- Top Title Bar -->
+        <header class="header-container">
+            <div>
+                <h1 class="page-title">🌐 전국 소상공인 지원사업 종합 보드</h1>
+                <p class="page-subtitle">실시간 지자체별 소상공인 고시공고 수집 현황판</p>
+            </div>
+            
+            <div class="d-flex gap-3">
+                <button type="button" class="btn-premium-primary" onclick="openCrawlerModal()">
+                    <i class="fa-solid fa-circle-play"></i> ⚡ 크롤러 즉시 실행
+                </button>
+                
+                <a href="/download?sido={{ filters.sido }}&sigungu={{ filters.sigungu }}&delivery_type={{ filters.delivery_type }}&status={{ filters.status }}&keyword={{ filters.keyword }}" class="btn-premium-success">
+                    <i class="fa-solid fa-file-excel"></i> 📊 맞춤형 엑셀 다운로드
+                </a>
+            </div>
+        </header>
+
+        <!-- KPI Statistic Metric Cards -->
+        <section class="stats-grid">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-title">수집된 총 사업 공고</div>
+                <div class="stat-value">{{ stats.total }}건</div>
+                <div class="stat-description">
+                    <i class="fa-solid fa-database text-primary"></i>
+                    <span>로컬 DB 저장 기준</span>
+                </div>
+            </div>
+            <div class="stat-card stat-card-success">
+                <div class="stat-title">현재 모집 진행 중</div>
+                <div class="stat-value">{{ stats.active }}건</div>
+                <div class="stat-description">
+                    <i class="fa-solid fa-circle-check text-success"></i>
+                    <span>신청 즉시 접수 가능</span>
+                </div>
+            </div>
+            <div class="stat-card stat-card-warning">
+                <div class="stat-title">마감 임박 / 조기소진</div>
+                <div class="stat-value">{{ stats.closing }}건</div>
+                <div class="stat-description">
+                    <i class="fa-solid fa-clock text-warning"></i>
+                    <span>신청 서류 준비 권장</span>
+                </div>
+            </div>
+            <div class="stat-card stat-card-secondary">
+                <div class="stat-title">직접 지급 예산 비율</div>
+                <div class="stat-value">{{ stats.direct_pct }}%</div>
+                <div class="stat-description">
+                    <i class="fa-solid fa-wallet text-secondary"></i>
+                    <span>소상공인 계좌 직접 지급</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Program List Section -->
+        <section>
+            <div class="list-section-header">
+                <h3 class="fw-bold fs-5 text-dark m-0">📊 지원사업 맞춤 검색 결과</h3>
+                <span class="list-count-badge">검색 결과: {{ data|length }}건</span>
+            </div>
+
+            {% if data %}
+            <div class="program-grid">
+                {% for item in data %}
+                <article class="program-card">
+                    <div>
+                        <!-- Region & Delivery Badges -->
+                        <div class="card-header-area">
+                            <div class="badge-group">
+                                <span class="badge-region">
+                                    <i class="fa-solid fa-location-dot"></i> {{ item.sido }} &gt; {{ item.sigungu }}
+                                </span>
+                                {% if '직접' in item.budget_delivery_type %}
+                                <span class="badge-delivery delivery-direct">
+                                    <i class="fa-solid fa-hand-holding-dollar"></i> 직접 지급
+                                </span>
+                                {% else %}
+                                <span class="badge-delivery delivery-indirect">
+                                    <i class="fa-solid fa-building-columns"></i> 간접 지원
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            <span class="badge-status {% if item.status == '모집중' %}status-active{% else %}status-closed{% endif %}">
+                                {{ item.status }}
+                            </span>
+                        </div>
+
+                        <!-- Organization Name & Title -->
+                        <div class="organization-name">
+                            <i class="fa-regular fa-building"></i> {{ item.organization }}
+                        </div>
+                        <h4 class="program-title">{{ item.title }}</h4>
+                        <p class="program-desc">{{ item.content }}</p>
+
+                        <!-- Key Bullets Information -->
+                        <ul class="info-bullet-list">
+                            <li class="info-bullet-item">
+                                <span class="bullet-label"><i class="fa-solid fa-coins text-warning me-1"></i> 지원 예산</span>
+                                <span class="bullet-value">{{ item.budget_size }}</span>
+                            </li>
+                            <li class="info-bullet-item">
+                                <span class="bullet-label"><i class="fa-solid fa-users text-primary me-1"></i> 지원 대상</span>
+                                <span class="bullet-value text-truncate" style="max-width: 250px;" title="{{ item.target_audience }}">{{ item.target_audience }}</span>
+                            </li>
+                            <li class="info-bullet-item">
+                                <span class="bullet-label"><i class="fa-solid fa-calendar-day text-danger me-1"></i> 접수 마감</span>
+                                <span class="bullet-value">{{ item.deadline }}</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Footer Action Buttons -->
+                    <div class="card-footer-area">
+                        <span class="date-indicator">
+                            <i class="fa-regular fa-clock"></i> 공고일: {{ item.announcement_date }}
+                        </span>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn-card-view" onclick="openHwpxViewer('{{ item.id }}', '{{ item.title }}')">
+                                <i class="fa-regular fa-file-pdf"></i> 공고문 뷰어
+                            </button>
+                            <a href="{{ item.link }}" target="_blank" class="btn-card-link">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> 원본
+                            </a>
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5 my-5 bg-white border rounded-3">
+                <i class="fa-solid fa-folder-open text-muted fs-1 mb-3"></i>
+                <h5 class="text-dark fw-bold">해당 필터에 일치하는 지원사업이 없습니다.</h5>
+                <p class="text-muted">필터링 기준을 완화하거나 다른 키워드로 검색해 보세요.</p>
+            </div>
+            {% endif %}
+        </section>
+    </main>
+</div>
+
+<!-- Modal 1: Realtime Crawler Console Terminal -->
+<div class="modal fade" id="crawlerTerminalModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="terminalModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="terminal-window">
+                <div class="terminal-header">
+                    <div class="terminal-dots">
+                        <div class="terminal-dot terminal-dot-red" onclick="closeCrawlerModalForce()"></div>
+                        <div class="terminal-dot terminal-dot-yellow"></div>
+                        <div class="terminal-dot terminal-dot-green"></div>
+                    </div>
+                    <div class="terminal-title">smallbiz_crawler.sh - bash</div>
+                    <div></div>
+                </div>
+                <div class="terminal-body" id="terminalOutput">
+                    <!-- Stream logs populate here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Premium HWPX Document Viewer -->
+<div class="modal fade" id="hwpxViewerModal" tabindex="-1" aria-labelledby="viewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: var(--shadow-lg);">
+            <div class="modal-header bg-dark text-white border-0 py-3" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                <h5 class="modal-title fs-6 fw-bold" id="viewerModalLabel">
+                    <i class="fa-regular fa-file-word text-primary me-2"></i> 공고 문서 표준 웹 뷰어 (HWPX)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light py-4" style="max-height: 75vh;">
+                <div class="hwp-doc-container">
+                    <div class="hwp-doc-header">
+                        <div class="hwp-doc-title" id="modalFileTitle">지원사업 공고문</div>
+                        <div class="hwp-doc-meta">
+                            <span id="modalDocOrg">소관 부처 및 지자체</span>
+                            <span id="modalDocDate">공고일자</span>
+                        </div>
+                    </div>
+                    <div class="hwp-doc-body" id="hwpxRenderCanvas">
+                        <!-- Hwp summary content goes here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-white border-top-0 py-3" style="border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+                <button type="button" class="btn btn-secondary px-4 py-2 fw-semibold" style="border-radius: 8px;" data-bs-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap & FontAwesome Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Region Dropdown Dependency JavaScript -->
+<script>
+    // Region mappings generated from Python database distinct query
+    const regionMapping = {{ region_mapping | tojson }};
+    const currentSido = "{{ filters.sido }}";
+    const currentSigungu = "{{ filters.sigungu }}";
+
+    const sidoSelect = document.getElementById('sidoSelect');
+    const sigunguSelect = document.getElementById('sigunguSelect');
+
+    function populateSigungu(sido, selectedSigungu = '전체') {
+        // Clear previous options
+        sigunguSelect.innerHTML = '<option value="전체">전체 (시/군/구)</option>';
+        
+        if (sido === '전체' || !regionMapping[sido]) {
+            return;
+        }
+
+        // Add matching sigungus
+        regionMapping[sido].forEach(sigungu => {
+            const option = document.createElement('option');
+            option.value = sigungu;
+            option.textContent = sigungu;
+            if (sigungu === selectedSigungu) {
+                option.selected = true;
+            }
+            sigunguSelect.appendChild(option);
+        });
+    }
+
+    sidoSelect.addEventListener('change', function() {
+        populateSigungu(this.value);
+    });
+
+    // Initialize dropdowns on page load
+    window.addEventListener('DOMContentLoaded', () => {
+        populateSigungu(currentSido, currentSigungu);
+    });
+
+    function resetFilters() {
+        document.getElementById('keyword').value = '';
+        sidoSelect.value = '전체';
+        populateSigungu('전체');
+        document.getElementById('deliveryTypeSelect').value = '전체';
+        document.getElementById('statusSelect').value = '전체';
+        document.getElementById('filterForm').submit();
+    }
+</script>
+
+<!-- EventStream real-time terminal connector & UI triggers -->
+<script>
+    let terminalModal = null;
+    let sseSource = null;
+
+    function openCrawlerModal() {
+        // Init bootstrap modal
+        const modalEl = document.getElementById('crawlerTerminalModal');
+        terminalModal = new bootstrap.Modal(modalEl);
+        terminalModal.show();
+
+        const terminalOutput = document.getElementById('terminalOutput');
+        terminalOutput.innerHTML = '<div class="terminal-line"><span class="text-white">$</span> ./run_smallbiz_crawler.sh<span class="terminal-cursor"></span></div>';
+
+        // Connect Server-Sent Events
+        if (sseSource) {
+            sseSource.close();
+        }
+
+        sseSource = new EventSource('/api/run_crawler');
+
+        sseSource.onmessage = function(event) {
+            const lineText = event.data;
+            
+            if (lineText === '[DONE]') {
+                sseSource.close();
+                appendTerminalLine('<span class="text-success">[DONE] 크롤링 세션이 완료되었습니다. 3초 후 변경사항을 반영하기 위해 화면을 새로고침합니다...</span>');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+                return;
+            }
+
+            // Syntax highlighting for logs
+            let styledLine = lineText;
+            if (lineText.includes('[INFO]')) {
+                styledLine = `<span class="text-muted">${lineText}</span>`;
+            } else if (lineText.includes('[SUCCESS]')) {
+                styledLine = `<span class="text-success fw-bold"><i class="fa-solid fa-circle-check"></i> ${lineText}</span>`;
+            } else if (lineText.includes('[WARNING]')) {
+                styledLine = `<span class="text-warning fw-bold"><i class="fa-solid fa-triangle-exclamation"></i> ${lineText}</span>`;
+            } else if (lineText.includes('--------------------------------------------------')) {
+                styledLine = `<span class="text-muted" style="opacity: 0.3;">${lineText}</span>`;
+            }
+
+            appendTerminalLine(styledLine);
+        };
+
+        sseSource.onerror = function(err) {
+            console.error("SSE Error:", err);
+            appendTerminalLine('<span class="text-danger">[ERR] 서버 연결 끊김 또는 에러 발생.</span>');
+            sseSource.close();
+        };
+    }
+
+    function appendTerminalLine(htmlContent) {
+        const terminalOutput = document.getElementById('terminalOutput');
+        
+        // Remove cursor first
+        const cursor = terminalOutput.querySelector('.terminal-cursor');
+        if (cursor) {
+            cursor.remove();
+        }
+
+        // Add line
+        const lineDiv = document.createElement('div');
+        lineDiv.className = 'terminal-line';
+        lineDiv.innerHTML = htmlContent;
+        terminalOutput.appendChild(lineDiv);
+
+        // Put cursor back
+        const newCursorDiv = document.createElement('span');
+        newCursorDiv.className = 'terminal-cursor';
+        terminalOutput.appendChild(newCursorDiv);
+
+        // Auto Scroll to bottom
+        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    }
+
+    function closeCrawlerModalForce() {
+        if (sseSource) {
+            sseSource.close();
+        }
+        if (terminalModal) {
+            terminalModal.hide();
+        }
+    }
+
+    // Document Viewer detail fetcher
+    function openHwpxViewer(docId, docTitle) {
+        document.getElementById('modalFileTitle').innerText = docTitle;
+        const canvas = document.getElementById('hwpxRenderCanvas');
+        const modalOrg = document.getElementById('modalDocOrg');
+        const modalDate = document.getElementById('modalDocDate');
+
+        // Loading spinner
+        canvas.innerHTML = `
+            <div class="text-center my-5 text-muted">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p>한글(HWPX) 표준 형식을 웹 문서로 고정밀 디컴파일 중입니다...</p>
+            </div>`;
+
+        const viewModal = new bootstrap.Modal(document.getElementById('hwpxViewerModal'));
+        viewModal.show();
+
+        fetch(`/api/view_hwpx/${docId}`)
+            .then(response => response.json())
+            .then(res => {
+                if(res.success) {
+                    // Split the text to style it nicely like a report
+                    const lines = res.html_content.split('\n');
+                    let formattedHtml = '';
+                    
+                    lines.forEach(line => {
+                        if (line.trim().startsWith('【') || line.trim().startsWith('[')) {
+                            formattedHtml += `<div class="hwp-section-title">${line}</div>`;
+                        } else if (line.trim().startsWith('1.') || line.trim().startsWith('2.') || line.trim().startsWith('3.') || line.trim().startsWith('-')) {
+                            formattedHtml += `<p style="margin-left: 20px; font-weight: 500;">${line}</p>`;
+                        } else {
+                            formattedHtml += `<p>${line}</p>`;
+                        }
+                    });
+                    
+                    canvas.innerHTML = formattedHtml;
+
+                    // Set metadata (pull from DOM or pass from list if needed, or query could return it. Let's look up item by ID)
+                    // We can find the card where it belongs and pull details
+                    const programCards = document.querySelectorAll('.program-card');
+                    programCards.forEach(card => {
+                        const titleEl = card.querySelector('.program-title');
+                        if (titleEl && titleEl.innerText === docTitle) {
+                            const org = card.querySelector('.organization-name').innerText;
+                            const date = card.querySelector('.date-indicator').innerText;
+                            modalOrg.innerText = org;
+                            modalDate.innerText = date;
+                        }
+                    });
+
+                } else {
+                    canvas.innerHTML = `<div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation"></i> 공고 문서 본문을 해석하는 데 실패했습니다.</div>`;
+                }
+            })
+            .catch(err => {
+                canvas.innerHTML = `<div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation"></i> 서버 통신 중 오류가 발생했습니다.</div>`;
+            });
+    }
+</script>
+</body>
+</html>

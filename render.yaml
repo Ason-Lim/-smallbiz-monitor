@@ -1,0 +1,21 @@
+# Render Blueprint Specification
+databases:
+  - name: smallbiz-db
+    databaseName: smallbiz_monitor
+    user: smallbiz_user
+    plan: free # Render's free PostgreSQL tier (valid for 90 days, no credit card required)
+
+services:
+  - type: web
+    name: smallbiz-monitor
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smallbiz-db
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: 3.10.0 # Set stable Python version for Gunicorn
