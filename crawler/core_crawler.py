@@ -158,27 +158,34 @@ def run_crawler_generator(simulate=True):
         
         # Real HTTP connection attempt (to demonstrate real-world networking attempt)
         connected_successfully = False
-        try:
-            # Set a low timeout so it fails quickly if there's no internet or block,
-            # but attempts to fetch to behave like a real crawler.
-            import ssl
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Connection': 'keep-alive'
-            }
-            req = urllib.request.Request(target['url'], headers=headers)
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-            
-            with urllib.request.urlopen(req, context=ctx, timeout=0.8) as response:
-                content_len = len(response.read())
-                yield f"data: [SUCCESS] [{target['name']}] 연결 성공 (데이터 크기: {content_len} bytes)\n\n"
-                connected_successfully = True
-        except Exception as e:
-            yield f"data: [WARNING] [{target['name']}] 직접 연결 실패 ({str(e)}). 캐시/시뮬레이션 모드로 전환합니다.\n\n"
+        
+        # Check if municipal WAF target to bypass connection attempts
+        is_municipal = (".go.kr" in target['url']) and ("bizinfo.go.kr" not in target['url']) and ("gg.go.kr" not in target['url'])
+        
+        if is_municipal:
+            yield f"data: [INFO] [{target['name']}] 보안 방화벽 감지 우회: 시뮬레이션 모드로 자동 전환합니다.\n\n"
+        else:
+            try:
+                # Set a low timeout so it fails quickly if there's no internet or block,
+                # but attempts to fetch to behave like a real crawler.
+                import ssl
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+                    'Connection': 'close'
+                }
+                req = urllib.request.Request(target['url'], headers=headers)
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+                
+                with urllib.request.urlopen(req, context=ctx, timeout=0.8) as response:
+                    content_len = len(response.read())
+                    yield f"data: [SUCCESS] [{target['name']}] 연결 성공 (데이터 크기: {content_len} bytes)\n\n"
+                    connected_successfully = True
+            except Exception as e:
+                yield f"data: [WARNING] [{target['name']}] 직접 연결 실패 ({str(e)}). 캐시/시뮬레이션 모드로 전환합니다.\n\n"
             
         time.sleep(0.01)
         
