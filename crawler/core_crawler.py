@@ -142,10 +142,10 @@ def run_crawler_generator(simulate=True):
     Ensures clear logging and database additions.
     """
     yield f"data: [INFO] 소상공인 지원사업 통합 크롤러 기동... (수집 대상: {len(CRAWL_TARGETS)}개 지자체 및 유관기관)\n\n"
-    time.sleep(0.1)
+    time.sleep(0.01)
     
     yield f"data: [INFO] 필터 키워드 로드 완료: {', '.join(KEYWORDS)}\n\n"
-    time.sleep(0.1)
+    time.sleep(0.01)
     
     new_items_added = 0
     
@@ -154,7 +154,7 @@ def run_crawler_generator(simulate=True):
     
     for idx, target in enumerate(CRAWL_TARGETS):
         yield f"data: [INFO] [{target['name']}] (주소: {target['url']}) 수집을 시도합니다...\n\n"
-        time.sleep(random.uniform(0.1, 0.3))
+        time.sleep(random.uniform(0.03, 0.07))
         
         # Real HTTP connection attempt (to demonstrate real-world networking attempt)
         connected_successfully = False
@@ -173,18 +173,18 @@ def run_crawler_generator(simulate=True):
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
             
-            with urllib.request.urlopen(req, context=ctx, timeout=3.0) as response:
+            with urllib.request.urlopen(req, context=ctx, timeout=0.8) as response:
                 content_len = len(response.read())
                 yield f"data: [SUCCESS] [{target['name']}] 연결 성공 (데이터 크기: {content_len} bytes)\n\n"
                 connected_successfully = True
         except Exception as e:
             yield f"data: [WARNING] [{target['name']}] 직접 연결 실패 ({str(e)}). 캐시/시뮬레이션 모드로 전환합니다.\n\n"
             
-        time.sleep(0.1)
+        time.sleep(0.01)
         
         # Simulate processing the HTML and looking for keywords
         yield f"data: [INFO] [{target['name']}] 본문 고시공고 인덱스 매칭 및 한글(HWP/HWPX) 첨부파일 파싱 중...\n\n"
-        time.sleep(random.uniform(0.1, 0.3))
+        time.sleep(random.uniform(0.03, 0.07))
         
         # Determine if we "discover" a new support program for this target
         # For targets with specific sigungu, we pick a corresponding new program if available
@@ -212,7 +212,7 @@ def run_crawler_generator(simulate=True):
                     new_items_added += 1
                     inserted_simulated_indices.add(p_idx)
                     found_new = True
-                    time.sleep(0.1)
+                    time.sleep(0.01)
                     break
                 else:
                     # Duplicate (already exists in DB)
@@ -223,9 +223,9 @@ def run_crawler_generator(simulate=True):
         if not found_new:
             yield f"data: [INFO] [{target['name']}] 새로운 지원사업 공고 없음 (최신 상태 유지 중).\n\n"
             
-        time.sleep(0.1)
+        time.sleep(0.01)
         yield "data: --------------------------------------------------\n\n"
         
     yield f"data: [SUCCESS] 크롤링이 성공적으로 완료되었습니다! 총 {new_items_added}건의 신규 사업이 발견 및 반영되었습니다.\n\n"
-    time.sleep(0.1)
+    time.sleep(0.01)
     yield "data: [DONE]\n\n"
