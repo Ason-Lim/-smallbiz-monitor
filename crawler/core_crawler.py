@@ -125,11 +125,19 @@ def run_crawler_generator(simulate=True):
         try:
             # Set a low timeout so it fails quickly if there's no internet or block,
             # but attempts to fetch to behave like a real crawler.
-            req = urllib.request.Request(
-                target['url'],
-                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-            )
-            with urllib.request.urlopen(req, timeout=3.0) as response:
+            import ssl
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Connection': 'keep-alive'
+            }
+            req = urllib.request.Request(target['url'], headers=headers)
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            
+            with urllib.request.urlopen(req, context=ctx, timeout=3.0) as response:
                 content_len = len(response.read())
                 yield f"data: [SUCCESS] [{target['name']}] 연결 성공 (데이터 크기: {content_len} bytes)\n\n"
                 connected_successfully = True

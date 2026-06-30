@@ -3,7 +3,7 @@
 CRAWL_TARGETS = [
     {
         "name": "중소벤처기업부 기업마당",
-        "url": "https://www.bizinfo.go.kr/web/lay1/S1T17C18/board/allSupportList.do",
+        "url": "https://www.bizinfo.go.kr/web/lay1/bbs/S1T122C128/AS/74/list.do",
         "type": "gov",
         "sido": "전국",
         "sigungu": "전체",
