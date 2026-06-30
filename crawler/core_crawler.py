@@ -105,7 +105,7 @@ def run_crawler_generator(simulate=True):
     Runs the crawler and yields status logs line-by-line as Server-Sent Events format.
     Ensures clear logging and database additions.
     """
-    yield "data: [INFO] 소상공인 지원사업 통합 크롤러 기동... (수집 대상: 6개 지자체 및 유관기관)\n\n"
+    yield f"data: [INFO] 소상공인 지원사업 통합 크롤러 기동... (수집 대상: {len(CRAWL_TARGETS)}개 지자체 및 유관기관)\n\n"
     time.sleep(0.5)
     
     yield f"data: [INFO] 필터 키워드 로드 완료: {', '.join(KEYWORDS)}\n\n"
