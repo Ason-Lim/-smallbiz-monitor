@@ -117,15 +117,15 @@ def download():
         data = database.get_all_gift_bids(filters)
         if not data:
             df = pd.DataFrame(columns=[
-                '기관명', '공고명', '공고일', '입찰 마감일', '담당부서', '담당자', '연락처', '상태', '원본 링크'
+                '기관명', '공고명', '예산규모', '공고일', '입찰 마감일', '담당부서', '담당자', '연락처', '상태', '원본 링크'
             ])
         else:
             df = pd.DataFrame(data).drop(columns=['hwpx_parsed_text', 'id'])
             # Reorder columns
-            cols = ['institution', 'title', 'announcement_date', 'deadline', 'department', 'manager', 'contact', 'status', 'link']
+            cols = ['institution', 'title', 'budget', 'announcement_date', 'deadline', 'department', 'manager', 'contact', 'status', 'link']
             df = df[cols]
             df.columns = [
-                '기관명', '공고명', '공고일', '입찰 마감일', '담당부서', '담당자', '연락처', '상태', '원본 링크'
+                '기관명', '공고명', '예산규모', '공고일', '입찰 마감일', '담당부서', '담당자', '연락처', '상태', '원본 링크'
             ]
             
         excel_dir = os.path.join(os.path.dirname(__file__), 'data')
@@ -185,6 +185,7 @@ def download_doc(doc_id):
         text_content = f"=== {doc_item.get('title', '공고문')} ===\n"
         if tab == 'b2b_gift':
             text_content += f"기관명: {doc_item.get('institution')}\n"
+            text_content += f"예산규모: {doc_item.get('budget')}\n"
             text_content += f"담당부서: {doc_item.get('department')}\n"
             text_content += f"담당자: {doc_item.get('manager')} ({doc_item.get('contact')})\n"
             text_content += f"공고일자: {doc_item.get('announcement_date')} | 입찰마감일자: {doc_item.get('deadline')}\n\n"
