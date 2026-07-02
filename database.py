@@ -39,6 +39,16 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    # Check if budget column exists in gift_bids table (if table exists)
+    try:
+        cursor.execute("SELECT * FROM gift_bids LIMIT 0")
+        colnames = [desc[0] for desc in cursor.description]
+        if 'budget' not in colnames:
+            cursor.execute("DROP TABLE IF EXISTS gift_bids CASCADE")
+            conn.commit()
+    except Exception:
+        conn.rollback()
+        
     # Create tables based on database type
     if IS_POSTGRES:
         cursor.execute('''
