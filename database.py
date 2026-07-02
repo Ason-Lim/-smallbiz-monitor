@@ -131,6 +131,9 @@ def init_db():
             )
         ''')
     
+    # Commit table creation
+    conn.commit()
+    
     # Ensure all B2B gift bids have populated budget values, otherwise force re-seeding
     try:
         cursor.execute("SELECT COUNT(*) FROM gift_bids WHERE budget IS NULL OR budget = ''")
