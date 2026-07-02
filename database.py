@@ -573,6 +573,15 @@ def init_db():
         
         conn.commit()
 
+    # Check if B2B gift bids need seeding
+    cursor.execute("SELECT COUNT(*) FROM gift_bids")
+    gift_count = cursor.fetchone()[0]
+    if gift_count < 5:
+        # Clear existing to prevent duplicate IDs and seed fresh list
+        cursor.execute("DELETE FROM gift_bids")
+        if IS_POSTGRES:
+            cursor.execute("ALTER SEQUENCE gift_bids_id_seq RESTART WITH 1")
+
         gift_seed_data = [
             (
                 "한국마사회", "2026년 추석맞이 임직원 온누리상품권 및 명절선물세트 구매 입찰",
