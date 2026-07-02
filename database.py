@@ -131,6 +131,16 @@ def init_db():
             )
         ''')
     
+    # Ensure all B2B gift bids have populated budget values, otherwise force re-seeding
+    try:
+        cursor.execute("SELECT COUNT(*) FROM gift_bids WHERE budget IS NULL OR budget = ''")
+        empty_budget_count = cursor.fetchone()[0]
+        if empty_budget_count > 0:
+            cursor.execute("DELETE FROM gift_bids")
+            conn.commit()
+    except Exception:
+        conn.rollback()
+
     # Check if table has data. If less than 30 items, re-seed to apply new regions and economic agencies.
     cursor.execute("SELECT COUNT(*) FROM programs")
     count = cursor.fetchone()[0]
