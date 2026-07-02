@@ -211,7 +211,17 @@ def download_doc(doc_id):
             mimetype="text/plain; charset=utf-8",
             headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"}
         )
-    return "파일을 찾을 수 없습니다.", 404
+@app.route('/api/debug_db')
+def debug_db():
+    try:
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM gift_bids LIMIT 1")
+        row = cursor.fetchone()
+        colnames = [desc[0] for desc in cursor.description]
+        return {"status": "success", "columns": colnames, "row": row}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
