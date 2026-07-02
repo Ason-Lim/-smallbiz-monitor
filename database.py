@@ -63,6 +63,22 @@ def init_db():
                 status VARCHAR(50) NOT NULL DEFAULT '모집중'
             )
         ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS gift_bids (
+                id SERIAL PRIMARY KEY,
+                institution VARCHAR(255) NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                announcement_date VARCHAR(50) NOT NULL,
+                deadline VARCHAR(50) NOT NULL,
+                department VARCHAR(255) NOT NULL,
+                manager VARCHAR(255) NOT NULL,
+                contact VARCHAR(255) NOT NULL,
+                link TEXT NOT NULL,
+                hwpx_parsed_text TEXT NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT '입찰중',
+                institution_type VARCHAR(50) NOT NULL
+            )
+        ''')
     else:
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS programs (
@@ -84,6 +100,22 @@ def init_db():
                 contact_info TEXT NOT NULL,
                 hwpx_parsed_text TEXT NOT NULL,
                 status TEXT NOT NULL DEFAULT '모집중'
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS gift_bids (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                institution TEXT NOT NULL,
+                title TEXT NOT NULL,
+                announcement_date TEXT NOT NULL,
+                deadline TEXT NOT NULL,
+                department TEXT NOT NULL,
+                manager TEXT NOT NULL,
+                contact TEXT NOT NULL,
+                link TEXT NOT NULL,
+                hwpx_parsed_text TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT '입찰중',
+                institution_type TEXT NOT NULL
             )
         ''')
     
@@ -515,6 +547,84 @@ def init_db():
         ''', seed_data)
         
         conn.commit()
+
+    # Seed gift_bids table
+    cursor.execute("SELECT COUNT(*) FROM gift_bids")
+    gift_count = cursor.fetchone()[0]
+    if gift_count < 8:
+        cursor.execute("DELETE FROM gift_bids")
+        if IS_POSTGRES:
+            cursor.execute("ALTER SEQUENCE gift_bids_id_seq RESTART WITH 1")
+        
+        gift_seed_data = [
+            (
+                "한국마사회", "2026년 추석맞이 임직원 온누리상품권 및 명절선물세트 구매 입찰",
+                "2026-06-25", "2026-07-10", "경영지원처 총무팀", "김현우 대리", "02-509-1234",
+                "https://www.g2b.go.kr",
+                "【한국마사회 공고 제2026-45호】\n\n2026년 추석맞이 임직원 명절선물세트 및 온누리상품권 조달 구매 입찰 공고\n\n한국마사회 임직원 복지 증진 및 지역 경제 활성화를 도모하기 위해 2026년도 추석 명절 임직원 대상 선물세트 및 온누리상품권 조달 업체를 다음과 같이 입찰 모집하오니 많은 참여 바랍니다.\n\n1. 입찰 개요\n  가. 사업명: 2026년 추석맞이 임직원 명절선물세트 및 온누리상품권 구매\n  나. 사업예산: 금 145,000,000원 (부가세 포함)\n  다. 배부대상: 본사 및 렛츠런파크, 지사 임직원 약 3,200명분\n  라. 주요 구성: 5만원 한도 한우/농산물 세트 또는 온누리상품권 복합 지급\n\n2. 입찰 참가 자격\n  가. 국가를 당사자로 하는 계약에 관한 법률 시행령 제12조의 요건을 갖춘 자\n  나. 온누리상품권 공식 가맹 지정사 및 농수축산물 공급 자격을 필한 자\n\n3. 접수 기간 및 방법\n  가. 접수마감: 2026년 7월 10일 18:00\n  나. 제출처: 나라장터 전자입찰\n\n4. 문의처: 경영지원처 총무팀 (☎ 02-509-1234)",
+                "입찰중", "공공기관"
+            ),
+            (
+                "한국전력공사", "2026년도 창립기념일 임직원 기념품(무선청소기 외 3종) 구매 단가계약",
+                "2026-06-28", "2026-07-15", "상생경영처 복지후생부", "이지은 차장", "061-345-2345",
+                "https://www.g2b.go.kr",
+                "【한국전력공사 공고 제2026-112호】\n\n2026년도 창립기념일 임직원 기념품 단가계약 입찰\n\n한국전력공사 창립기념일을 맞이하여 임직원들에게 지급할 기념품 선정을 위한 단가계약 입찰을 아래와 같이 공고합니다.\n\n1. 입찰 개요\n  가. 사업명: 2026년도 창립기념일 임직원 기념품 구매\n  나. 대상품목: 무선청소기, 공기청정기, 마사지기 등 선택식 가전/생활용품 4종\n  다. 예산단가: 1인당 100,000원 한도\n  라. 예정수량: 약 21,000개 (실제 신청 수량에 의거 지급)\n\n2. 주요 일정\n  가. 전자입찰 마감: 2026년 7월 15일 14:00\n  나. 제안서 및 실물 샘절 제출: 2026년 7월 16일\n\n3. 문의: 상생경영처 복지후생부 (☎ 061-345-2345)",
+                "입찰중", "공공기관"
+            ),
+            (
+                "서울교통공사", "2026년도 임직원 생일 및 가정의달 기념 온누리상품권/기프티콘 지급 사업자 선정",
+                "2026-07-01", "2026-07-20", "노사협력처 복지부", "박민수 과장", "02-6311-1234",
+                "https://www.g2b.go.kr",
+                "【서울교통공사 공고 제2026-202호】\n\n2026년도 임직원 생일 및 가정의달 기념 온누리상품권 및 모바일 기프티콘 공급 계약 공고\n\n1. 입찰 개요\n  가. 건명: 임직원 생일 및 가정의달 기념품 지급 사업자 선정\n  나. 사업내용: 생일자 모바일 쿠폰 발송 대행 및 온누리상품권 모바일형 배부\n  다. 총예산액: 금 480,000,000원\n\n2. 입찰 참가 자격\n  가. 모바일 상품권 및 전자쿠폰 시스템 개발 및 발송 대행업 등록 기업\n  나. 대량 발송 및 CS 시스템 전담 고객센터를 보유한 업체\n\n3. 마감일자: 2026년 7월 20일 18:00\n4. 문의처: 노사협력처 복지부 (☎ 02-6311-1234)",
+                "입찰중", "공공기관"
+            ),
+            (
+                "국민건강보험공단", "2026년 추석 명절 임직원 사회공헌활동용 전통시장 온누리상품권 구매",
+                "2026-07-02", "2026-07-12", "사회가치실현처", "최성훈 대리", "033-736-1280",
+                "https://www.g2b.go.kr",
+                "【국민건강보험공단 입찰공고 제2026-90호】\n\n2026년 추석 명절 맞이 전통시장 활성화 및 소외계층 기부를 위한 사회공헌용 전통시장 온누리상품권 구매 공고\n\n1. 구매 개요\n  가. 품명: 전통시장 온누리상품권 (지류형 및 카드형)\n  나. 수량: 총 1,600장 (장당 50,000원 권)\n  다. 사업예산: 금 80,000,000원 (VAT 면제)\n\n2. 입찰 참가 자격: 온누리상품권 공식 판매 수탁 금융기관 및 유통 대행 기관\n3. 입찰서 제출 마감: 2026년 7월 12일 11:00\n4. 문의처: 사회가치실현처 (☎ 033-736-1280)",
+                "입찰중", "공공기관"
+            ),
+            (
+                "KB국민은행", "2026년 임직원 창립기념일 및 명절(추석) 선물세트 품평회 및 납품업체 선정 공고",
+                "2026-06-20", "2026-07-05", "총무부 복지팀", "정재훈 과장", "02-2073-1111",
+                "https://www.kbstar.com",
+                "【KB국민은행 복지지원공고 제2026-08호】\n\n2026년도 KB국민은행 임직원 창립기념일 및 명절(추석) 선물세트 공급 업체 선정을 위한 품평회 제안 공고\n\nKB국민은행 총무부에서는 임직원들의 사기 진작과 복지 후생 향상을 도모하고자 하반기 주요 행사(창립기념일, 추석 명절) 지급용 선물세트 공급 업체를 아래와 같이 공모합니다.\n\n1. 공모 부문\n  가. 농수축산물 명품 선물세트 (사과, 배, 한우 등)\n  나. 가전/리빙 프리미엄 기프트 (소형가전, 침구류 등)\n  다. 웰빙/건강식품 세트 (홍삼, 비타민 등)\n\n2. 평가 방식: 제안서 서류 심사 -> 상위 10개사 품평회 전시 및 임직원 블라인드 투표 -> 최종 3개 품목 공급 업체 선정\n3. 마감 기한: 2026년 7월 5일 17:00까지\n4. 접수처: 총무부 복지팀 방문 접수",
+                "입찰중", "금융기관"
+            ),
+            (
+                "삼성화재해상보험", "2026년 하반기 임직원 생일선물 및 자녀출산 축하 기념품 조달 업체 비딩",
+                "2026-06-22", "2026-07-08", "인사지원팀 복리후생기획파트", "서지영 책임", "02-1588-5114",
+                "https://www.samsungfire.com",
+                "【삼성화재 복지공고 제2026-15호】\n\n2026년 하반기 임직원 생일선물 및 자녀출산 축하 기념품 조달 업체 비딩 제안 공고\n\n임직원 가족 친화 제도 운영의 일환으로 시행 중인 생일 및 출산 축하 선물 용품의 조달 및 전국 배송을 대행할 업체를 선정하고자 하오니 역량 있는 파트너사들의 제안을 기다립니다.\n\n1. 대상 품목\n  - 생일 기념품: 아웃도어 용품, 가죽 잡화, 건강관리 기기 등 (단가 6만원 상당)\n  - 자녀출산 선물: 영유아 의류, 친환경 세제, 출산 기념 용품 패키지 (단가 10만원 상당)\n\n2. 제안 마감일: 2026년 7월 8일 18:00\n3. 접수 방법: 이메일 접수 및 제안 설명서 파일 송부\n4. 문의: 인사지원팀 복리후생기획파트 (☎ 02-1588-5114)",
+                "입찰중", "금융기관"
+            ),
+            (
+                "신한카드", "2026년도 설 및 추석 명절 임직원 복지포인트 대체 선물세트 공급업체 모집",
+                "2026-06-15", "2026-06-30", "경영지원본부 총무팀", "한상민 부부장", "02-6950-1111",
+                "https://www.shinhancard.com",
+                "【신한카드 공고 제2026-04호】\n\n2026년 설 및 추석 임직원 선택형 복지 선물세트 조달 입찰 마감 안내\n\n1. 사업명: 2026년 신한카드 임직원 명절 복지 선물 공급\n2. 진행 상황: 제안서 및 샘플 평가가 완료되어 본 공고의 모집은 최종 마감되었습니다. 참여해 주신 유통 업체 관계자분들께 감사드립니다.\n3. 선정된 업체 리스트는 개별 통보 및 통보된 납품 일정에 따라 순차 배송을 개시할 예정입니다.\n4. 문의: 경영지원본부 총무팀 (☎ 02-6950-1111)",
+                "입찰마감", "금융기관"
+            ),
+            (
+                "SBI저축은행", "2026년 창립기념일 임직원 가족친화 감사 선물세트 공급 제안서 제출 안내",
+                "2026-06-27", "2026-07-18", "인사총무부 복지담당", "김수민 과장", "02-2007-8000",
+                "https://www.sbisb.co.kr",
+                "【SBI저축은행 공고 제2026-22호】\n\nSBI저축은행 임직원 창립기념 가족친화 감사 선물 공급사 모집 제안 공고\n\n1. 제안 개요\n  가. 품명: 임직원 가족 친화 감사 기프트 세트 (쿠키/수제청 세트, 프리미엄 밀키트 패키지 등)\n  나. 지급규모: 전사 임직원 1,500명 대상 (각 개별 가정 택배 배송 포함)\n  다. 선정방식: 서류 심사 후 제품 품평회 종합 평가\n\n2. 제출서류 및 기한\n  가. 제안서 및 제품 견본품 제출 기한: 2026년 7월 18일 17:00까지\n  나. 제출처: SBI저축은행 본사 인사총무부 방문 제출\n\n3. 문의: 인사총무부 복지담당 (☎ 02-2007-8000)",
+                "입찰중", "금융기관"
+            )
+        ]
+        
+        placeholder_g = '%s' if IS_POSTGRES else '?'
+        placeholders_g = ', '.join([placeholder_g] * 11)
+        cursor.executemany(f'''
+            INSERT INTO gift_bids (
+                institution, title, announcement_date, deadline, department, manager,
+                contact, link, hwpx_parsed_text, status, institution_type
+            ) VALUES ({placeholders_g})
+        ''', gift_seed_data)
+        
+        conn.commit()
     conn.close()
 
 def get_all_programs(filters=None):
@@ -619,6 +729,82 @@ def insert_program(data):
         data['content'], data['link'], data['deadline'], data['budget_size'], data['target_audience'],
         data['participation_method'], data['budget_delivery_type'], data['apply_method'], data['documents'],
         data['contact_info'], data['hwpx_parsed_text'], data.get('status', '모집중')
+    ))
+    conn.commit()
+    conn.close()
+    return True
+
+def get_all_gift_bids(filters=None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    placeholder = '%s' if IS_POSTGRES else '?'
+    query = "SELECT * FROM gift_bids WHERE 1=1"
+    params = []
+    
+    if filters:
+        if filters.get('institution_type') and filters.get('institution_type') != '전체':
+            query += f" AND institution_type = {placeholder}"
+            params.append(filters['institution_type'])
+        if filters.get('status') and filters.get('status') != '전체':
+            if filters['status'] == '마감임박':
+                like_keyword = 'ILIKE' if IS_POSTGRES else 'LIKE'
+                query += f" AND (status {like_keyword} {placeholder} OR deadline {like_keyword} {placeholder})"
+                params.extend(["%임박%", "%소진%"])
+            else:
+                query += f" AND status = {placeholder}"
+                params.append(filters['status'])
+        if filters.get('keyword'):
+            like_keyword = 'ILIKE' if IS_POSTGRES else 'LIKE'
+            query += f" AND (title {like_keyword} {placeholder} OR institution {like_keyword} {placeholder} OR department {like_keyword} {placeholder})"
+            keyword_param = f"%{filters['keyword']}%"
+            params.extend([keyword_param, keyword_param, keyword_param])
+            
+    query += " ORDER BY announcement_date DESC, id DESC"
+    
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    
+    result = get_dict_result(cursor, rows)
+    conn.close()
+    return result
+
+def get_gift_bid_by_id(gift_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    placeholder = '%s' if IS_POSTGRES else '?'
+    
+    val = int(gift_id) if IS_POSTGRES else gift_id
+    cursor.execute(f"SELECT * FROM gift_bids WHERE id = {placeholder}", (val,))
+    row = cursor.fetchone()
+    
+    result = None
+    if row:
+        result = get_dict_result(cursor, [row])[0]
+    conn.close()
+    return result
+
+def insert_gift_bid(data):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    placeholder = '%s' if IS_POSTGRES else '?'
+    cursor.execute(f"SELECT id FROM gift_bids WHERE title = {placeholder} AND institution = {placeholder}", (data['title'], data['institution']))
+    exist = cursor.fetchone()
+    if exist:
+        conn.close()
+        return False
+        
+    placeholders = ', '.join([placeholder] * 11)
+    cursor.execute(f'''
+        INSERT INTO gift_bids (
+            institution, title, announcement_date, deadline, department, manager,
+            contact, link, hwpx_parsed_text, status, institution_type
+        ) VALUES ({placeholders})
+    ''', (
+        data['institution'], data['title'], data['announcement_date'], data['deadline'],
+        data['department'], data['manager'], data['contact'], data['link'],
+        data['hwpx_parsed_text'], data.get('status', '입찰중'), data['institution_type']
     ))
     conn.commit()
     conn.close()

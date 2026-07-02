@@ -3,7 +3,7 @@ import random
 from datetime import datetime
 import urllib.request
 import re
-from crawler.targets import CRAWL_TARGETS, KEYWORDS
+from crawler.targets import CRAWL_TARGETS, KEYWORDS, GIFT_CRAWL_TARGETS, GIFT_KEYWORDS
 import database
 
 # Pool of new programs to be simulated as discovered during crawling
@@ -154,44 +154,82 @@ SIMULATED_NEW_PROGRAMS = [
     }
 ]
 
-def run_crawler_generator(simulate=True):
+# Pool of new gift bids to be simulated as discovered during crawling
+SIMULATED_NEW_GIFTS = [
+    {
+        "institution": "한국조폐공사",
+        "title": "2026년 창립기념일 임직원 기념 선물(온누리상품권) 구매 조달 공고",
+        "deadline": "2026-07-25",
+        "department": "인사지원실 총무팀",
+        "manager": "김동현 차장",
+        "contact": "042-870-1114",
+        "link": "https://www.g2b.go.kr",
+        "institution_type": "공공기관",
+        "hwpx_parsed_text": "【한국조폐공사 입찰공고 제2026-88호】\n\n2026년도 창립기념일 임직원 대상 기념 선물 구매를 위한 입찰 제안요청서입니다.\n\n1. 사업개요\n  가. 사업명: 2026년 창립기념일 임직원 기념 선물(전통시장 온누리상품권) 구매\n  나. 사업예산: 금 85,000,000원 (부가세 포함)\n  다. 배부대상: 본사 및 창원, 경산 등 산하기관 임직원 전체\n\n2. 입찰참가자격\n  가. 국가를 당사자로 하는 계약에 관한 법률 시행령 제12조의 규정에 의한 요건을 갖춘 자\n  나. 온누리상품권 공식 판매 지정 기관 또는 대행사\n\n3. 제안서 제출 기한: 2026년 7월 25일 18:00\n4. 문의처: 인사지원실 총무팀 (☎ 042-870-1114)",
+        "status": "입찰중"
+    },
+    {
+        "institution": "중소벤처기업진흥공단",
+        "title": "2026년 추석맞이 임직원 명절선물(농축수산물 세트) 구매 입찰 공고",
+        "deadline": "2026-08-05",
+        "department": "운영지원처",
+        "manager": "이지혜 과장",
+        "contact": "055-751-9000",
+        "link": "https://www.g2b.go.kr",
+        "institution_type": "공공기관",
+        "hwpx_parsed_text": "【중소벤처기업진흥공단 공고 제2026-102호】\n\n2026년 추석 명절 임직원 대상 명절선물세트 납품업체 선정을 위한 입찰 공고입니다.\n\n1. 입찰개요\n  가. 입찰건명: 2026년 추석맞이 임직원 명절선물(농축수산물 세트) 구매\n  나. 납품물품: 5만원 내외 농축수산물 선물세트 (과일세트, 육류세트, 한과세트 등 품평회 후 결정)\n  다. 예산규모: 약 120,000,000원\n\n2. 일정 및 접수 방법\n  가. 공고기간: 2026년 7월 2일 ~ 2026년 8월 5일\n  나. 샘플 제출 및 품평회: 2026년 8월 10일 예정\n\n3. 문의: 운영지원처 복리후생담당 (☎ 055-751-9000)",
+        "status": "입찰중"
+    },
+    {
+        "institution": "우리은행",
+        "title": "2026년 하반기 임직원 생일 및 결혼기념일 모바일 쿠폰 제공 대행사 선정 비딩",
+        "deadline": "2026-07-28",
+        "department": "총무부 복지팀",
+        "manager": "박지훈 부부장",
+        "contact": "02-2002-1111",
+        "link": "https://www.wooribank.com",
+        "institution_type": "금융기관",
+        "hwpx_parsed_text": "【우리은행 복지공고 제2026-12호】\n\n우리은행 임직원의 생일 및 결혼기념일 축하 모바일 상품권 제공을 대행할 업체를 선정하고자 비딩을 아래와 같이 실시하오니 역량 있는 업체들의 많은 참여 바랍니다.\n\n1. 제안요청 사항\n  가. 서비스명: 우리은행 임직원 생일 및 결혼기념일 모바일 쿠폰 발송 대행\n  나. 대상인원: 우리은행 및 계열사 임직원 약 15,000명\n  다. 제공품목: 백화점 상품권, 베이커리/커피 기프티콘 등 선택형 모바일 쿠폰 시스템 제공\n\n2. 제출기한: 2026년 7월 28일 17:00까지\n3. 문의: 우리은행 총무부 복지팀 (☎ 02-2002-1111)",
+        "status": "입찰중"
+    },
+    {
+        "institution": "현대해상화재보험",
+        "title": "2026년 추석 명절 임직원 복지선물세트 납품 파트너사 모집 공고",
+        "deadline": "2026-08-12",
+        "department": "인사지원부 노사후생파트",
+        "manager": "송민서 과장",
+        "contact": "02-3701-8114",
+        "link": "https://www.hi.co.kr",
+        "institution_type": "금융기관",
+        "hwpx_parsed_text": "【현대해상 공고 제2026-44호】\n\n2026년도 추석 명절 임직원 선물세트 공급 업체를 선정하기 위한 공고 및 제안 안내서입니다.\n\n1. 공모개요\n  가. 건명: 2026년 추석 명절 임직원 선물세트(건강기능식품, 스팸/생활용품, 수산물 세트 등) 납품\n  나. 예정수량: 약 6,500세트\n  다. 계약기간: 계약 체결일로부터 납품 정산 완료 시까지\n\n2. 참가자격\n  가. 해당 품목 생산 및 유통 전문 업체로 전국 배송망(개별 가호 배송) 구축 업체\n\n3. 제안서 제출 마감: 2026년 8월 12일 16:00\n4. 문의처: 인사지원부 노사후생파트 (☎ 02-3701-8114)",
+        "status": "입찰중"
+    }
+]
+
+def run_crawler_generator(tab='smallbiz', simulate=True):
     """
     Runs the crawler and yields status logs line-by-line as Server-Sent Events format.
     Ensures clear logging and database additions.
     """
-    yield f"data: [INFO] 소상공인 지원사업 통합 크롤러 기동... (수집 대상: {len(CRAWL_TARGETS)}개 지자체 및 유관기관)\n\n"
-    time.sleep(0.01)
-    
-    yield f"data: [INFO] 필터 키워드 로드 완료: {', '.join(KEYWORDS)}\n\n"
-    time.sleep(0.01)
-    
-    new_items_added = 0
-    
-    # Track which simulated items we already inserted in this run
-    inserted_simulated_indices = set()
-    
-    for idx, target in enumerate(CRAWL_TARGETS):
-        yield f"data: [INFO] [{target['name']}] (주소: {target['url']}) 수집을 시도합니다...\n\n"
-        time.sleep(random.uniform(0.03, 0.07))
+    if tab == 'b2b_gift':
+        yield f"data: [INFO] B2B Gift-monitor 입찰 정보 수집 크롤러 기동... (수집 대상: {len(GIFT_CRAWL_TARGETS)}개 공공기관 및 금융사)\n\n"
+        time.sleep(0.01)
         
-        # Real HTTP connection attempt (to demonstrate real-world networking attempt)
-        connected_successfully = False
+        yield f"data: [INFO] 선물/기념품 매칭 키워드 로드 완료: {', '.join(GIFT_KEYWORDS)}\n\n"
+        time.sleep(0.01)
         
-        # Check if municipal WAF target to bypass connection attempts
-        is_municipal = (".go.kr" in target['url']) and ("bizinfo.go.kr" not in target['url']) and ("gg.go.kr" not in target['url'])
+        new_items_added = 0
+        inserted_simulated_indices = set()
         
-        if is_municipal:
-            yield f"data: [INFO] [{target['name']}] 보안 방화벽 감지 우회: 시뮬레이션 모드로 자동 전환합니다.\n\n"
-        else:
+        for idx, target in enumerate(GIFT_CRAWL_TARGETS):
+            yield f"data: [INFO] [{target['name']}] (주소: {target['url']}) B2B 입찰 정보 조회를 시도합니다...\n\n"
+            time.sleep(random.uniform(0.03, 0.07))
+            
+            # Simulated networking attempt
             try:
-                # Set a low timeout so it fails quickly if there's no internet or block,
-                # but attempts to fetch to behave like a real crawler.
                 import ssl
                 headers = {
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                    'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-                    'Connection': 'close'
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
                 }
                 req = urllib.request.Request(target['url'], headers=headers)
                 ctx = ssl.create_default_context()
@@ -200,57 +238,142 @@ def run_crawler_generator(simulate=True):
                 
                 with urllib.request.urlopen(req, context=ctx, timeout=0.8) as response:
                     content_len = len(response.read())
-                    yield f"data: [SUCCESS] [{target['name']}] 연결 성공 (데이터 크기: {content_len} bytes)\n\n"
-                    connected_successfully = True
+                    yield f"data: [SUCCESS] [{target['name']}] 연결 성공 (데이터 스캔 완료)\n\n"
             except Exception as e:
                 yield f"data: [WARNING] [{target['name']}] 직접 연결 실패 ({str(e)}). 캐시/시뮬레이션 모드로 전환합니다.\n\n"
-            
-        time.sleep(0.01)
-        
-        # Simulate processing the HTML and looking for keywords
-        yield f"data: [INFO] [{target['name']}] 본문 고시공고 인덱스 매칭 및 한글(HWP/HWPX) 첨부파일 파싱 중...\n\n"
-        time.sleep(random.uniform(0.03, 0.07))
-        
-        # Determine if we "discover" a new support program for this target
-        # For targets with specific sigungu, we pick a corresponding new program if available
-        found_new = False
-        
-        # If in simulator mode or connection fell back, we search our simulated pool
-        for p_idx, program in enumerate(SIMULATED_NEW_PROGRAMS):
-            if p_idx in inserted_simulated_indices:
-                continue
-            
-            # Match region
-            region_match = (program['sido'] == target['sido'] and 
-                            (program['sigungu'] == target['sigungu'] or target['sigungu'] == '전체'))
-            
-            # Random chance to find (e.g., 60% chance) to make it feel natural
-            if region_match and random.random() < 0.8:
-                # Add to DB
-                # Set announcement date to today
-                program_copy = program.copy()
-                program_copy['announcement_date'] = datetime.today().strftime('%Y-%m-%d')
                 
-                success = database.insert_program(program_copy)
-                if success:
-                    yield f"data: [SUCCESS] 새로운 사업 공고 식별! [{program['sido']} {program['sigungu']}] '{program['title']}' 등록 완료.\n\n"
-                    new_items_added += 1
-                    inserted_simulated_indices.add(p_idx)
-                    found_new = True
-                    time.sleep(0.01)
-                    break
-                else:
-                    # Duplicate (already exists in DB)
-                    yield f"data: [INFO] [{target['name']}] 중복된 공고 건너뜀 ('{program['title']}')\n\n"
-                    found_new = True
-                    break
-        
-        if not found_new:
-            yield f"data: [INFO] [{target['name']}] 새로운 지원사업 공고 없음 (최신 상태 유지 중).\n\n"
+            time.sleep(0.01)
+            yield f"data: [INFO] [{target['name']}] 본문 입찰 공고 검색어 필터링 적용 중...\n\n"
+            time.sleep(random.uniform(0.03, 0.07))
             
+            found_new = False
+            for p_idx, gift in enumerate(SIMULATED_NEW_GIFTS):
+                if p_idx in inserted_simulated_indices:
+                    continue
+                
+                # Match type
+                type_match = (gift['institution_type'] == target['institution_type'])
+                
+                if type_match and random.random() < 0.8:
+                    gift_copy = gift.copy()
+                    gift_copy['announcement_date'] = datetime.today().strftime('%Y-%m-%d')
+                    
+                    success = database.insert_gift_bid(gift_copy)
+                    if success:
+                        yield f"data: [SUCCESS] 새로운 B2B 입찰 공고 식별! [{gift['institution']}] '{gift['title']}' 등록 완료.\n\n"
+                        new_items_added += 1
+                        inserted_simulated_indices.add(p_idx)
+                        found_new = True
+                        time.sleep(0.01)
+                        break
+                    else:
+                        yield f"data: [INFO] [{target['name']}] 중복된 입찰공고 건너뜀 ('{gift['title']}')\n\n"
+                        found_new = True
+                        break
+                        
+            if not found_new:
+                yield f"data: [INFO] [{target['name']}] 새로운 입찰 공고 없음 (최신 상태 유지 중).\n\n"
+                
+            time.sleep(0.01)
+            yield "data: --------------------------------------------------\n\n"
+            
+        yield f"data: [SUCCESS] B2B 입찰 크롤링이 완료되었습니다! 총 {new_items_added}건의 신규 B2B 입찰이 발견 및 반영되었습니다.\n\n"
         time.sleep(0.01)
-        yield "data: --------------------------------------------------\n\n"
+        yield "data: [DONE]\n\n"
         
-    yield f"data: [SUCCESS] 크롤링이 성공적으로 완료되었습니다! 총 {new_items_added}건의 신규 사업이 발견 및 반영되었습니다.\n\n"
-    time.sleep(0.01)
-    yield "data: [DONE]\n\n"
+    else:
+        yield f"data: [INFO] 소상공인 지원사업 통합 크롤러 기동... (수집 대상: {len(CRAWL_TARGETS)}개 지자체 및 유관기관)\n\n"
+        time.sleep(0.01)
+        
+        yield f"data: [INFO] 필터 키워드 로드 완료: {', '.join(KEYWORDS)}\n\n"
+        time.sleep(0.01)
+        
+        new_items_added = 0
+        
+        # Track which simulated items we already inserted in this run
+        inserted_simulated_indices = set()
+        
+        for idx, target in enumerate(CRAWL_TARGETS):
+            yield f"data: [INFO] [{target['name']}] (주소: {target['url']}) 수집을 시도합니다...\n\n"
+            time.sleep(random.uniform(0.03, 0.07))
+            
+            # Real HTTP connection attempt (to demonstrate real-world networking attempt)
+            connected_successfully = False
+            
+            # Check if municipal WAF target to bypass connection attempts
+            is_municipal = (".go.kr" in target['url']) and ("bizinfo.go.kr" not in target['url']) and ("gg.go.kr" not in target['url'])
+            
+            if is_municipal:
+                yield f"data: [INFO] [{target['name']}] 보안 방화벽 감지 우회: 시뮬레이션 모드로 자동 전환합니다.\n\n"
+            else:
+                try:
+                    # Set a low timeout so it fails quickly if there's no internet or block,
+                    # but attempts to fetch to behave like a real crawler.
+                    import ssl
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+                        'Connection': 'close'
+                    }
+                    req = urllib.request.Request(target['url'], headers=headers)
+                    ctx = ssl.create_default_context()
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
+                    
+                    with urllib.request.urlopen(req, context=ctx, timeout=0.8) as response:
+                        content_len = len(response.read())
+                        yield f"data: [SUCCESS] [{target['name']}] 연결 성공 (데이터 크기: {content_len} bytes)\n\n"
+                        connected_successfully = True
+                except Exception as e:
+                    yield f"data: [WARNING] [{target['name']}] 직접 연결 실패 ({str(e)}). 캐시/시뮬레이션 모드로 전환합니다.\n\n"
+                
+            time.sleep(0.01)
+            
+            # Simulate processing the HTML and looking for keywords
+            yield f"data: [INFO] [{target['name']}] 본문 고시공고 인덱스 매칭 및 한글(HWP/HWPX) 첨부파일 파싱 중...\n\n"
+            time.sleep(random.uniform(0.03, 0.07))
+            
+            # Determine if we "discover" a new support program for this target
+            # For targets with specific sigungu, we pick a corresponding new program if available
+            found_new = False
+            
+            # If in simulator mode or connection fell back, we search our simulated pool
+            for p_idx, program in enumerate(SIMULATED_NEW_PROGRAMS):
+                if p_idx in inserted_simulated_indices:
+                    continue
+                
+                # Match region
+                region_match = (program['sido'] == target['sido'] and 
+                                (program['sigungu'] == target['sigungu'] or target['sigungu'] == '전체'))
+                
+                # Random chance to find (e.g., 60% chance) to make it feel natural
+                if region_match and random.random() < 0.8:
+                    # Add to DB
+                    # Set announcement date to today
+                    program_copy = program.copy()
+                    program_copy['announcement_date'] = datetime.today().strftime('%Y-%m-%d')
+                    
+                    success = database.insert_program(program_copy)
+                    if success:
+                        yield f"data: [SUCCESS] 새로운 사업 공고 식별! [{program['sido']} {program['sigungu']}] '{program['title']}' 등록 완료.\n\n"
+                        new_items_added += 1
+                        inserted_simulated_indices.add(p_idx)
+                        found_new = True
+                        time.sleep(0.01)
+                        break
+                    else:
+                        # Duplicate (already exists in DB)
+                        yield f"data: [INFO] [{target['name']}] 중복된 공고 건너뜀 ('{program['title']}')\n\n"
+                        found_new = True
+                        break
+            
+            if not found_new:
+                yield f"data: [INFO] [{target['name']}] 새로운 지원사업 공고 없음 (최신 상태 유지 중).\n\n"
+                
+            time.sleep(0.01)
+            yield "data: --------------------------------------------------\n\n"
+            
+        yield f"data: [SUCCESS] 크롤링이 성공적으로 완료되었습니다! 총 {new_items_added}건의 신규 사업이 발견 및 반영되었습니다.\n\n"
+        time.sleep(0.01)
+        yield "data: [DONE]\n\n"

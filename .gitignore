@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+data/smallbiz_programs.db
+data/*.xlsx
+.DS_Store

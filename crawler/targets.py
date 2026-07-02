@@ -196,3 +196,67 @@ KEYWORDS = [
     "AI", "인공지능", "DX", "디지털전환", "챗봇",
     "라이브 커머스", "인플루언서", "입점 셀러", "셀러", "쇼핑라이브", "홈쇼핑", "디지털 마케팅", "AI 상품 페이지", "톡라이브"
 ]
+
+# B2B 선물 크롤링 대상 사이트 정의
+GIFT_CRAWL_TARGETS = [
+    {
+        "name": "나라장터 (G2B)",
+        "url": "https://www.g2b.go.kr",
+        "type": "g2b",
+        "institution_type": "공공기관"
+    },
+    {
+        "name": "KB국민은행 공고",
+        "url": "https://www.kbstar.com",
+        "type": "bank",
+        "institution_type": "금융기관"
+    },
+    {
+        "name": "신한은행 공고",
+        "url": "https://www.shinhan.com",
+        "type": "bank",
+        "institution_type": "금융기관"
+    },
+    {
+        "name": "하나은행 공고",
+        "url": "https://www.hanabank.com",
+        "type": "bank",
+        "institution_type": "금융기관"
+    },
+    {
+        "name": "우리은행 공고",
+        "url": "https://www.wooribank.com",
+        "type": "bank",
+        "institution_type": "금융기관"
+    },
+    {
+        "name": "삼성화재 공고",
+        "url": "https://www.samsungfire.com",
+        "type": "insurance",
+        "institution_type": "금융기관"
+    },
+    {
+        "name": "현대해상 공고",
+        "url": "https://www.hi.co.kr",
+        "type": "insurance",
+        "institution_type": "금융기관"
+    },
+    {
+        "name": "신한카드 공고",
+        "url": "https://www.shinhancard.com",
+        "type": "card",
+        "institution_type": "금융기관"
+    },
+    {
+        "name": "SBI저축은행 공고",
+        "url": "https://www.sbisb.co.kr",
+        "type": "savings_bank",
+        "institution_type": "금융기관"
+    }
+]
+
+# B2B 선물 크롤링 매칭 키워드 목록
+GIFT_KEYWORDS = [
+    "설 선물", "추석 선물", "명절 선물", "명절 기념품", "임직원 선물", "가족친화", "가정", "자녀", "생일", 
+    "설", "추석 명절", "창립기념일", "가족 친화", "선물세트", "기념품"
+]

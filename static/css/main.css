@@ -32,7 +32,7 @@ body {
 /* Layout Structure */
 .dashboard-wrapper {
     display: flex;
-    min-height: 100vh;
+    min-height: calc(100vh - 70px);
 }
 
 /* Sidebar Styling */
@@ -651,4 +651,85 @@ body {
 .hwp-table th {
     background-color: #F3F4F6;
     font-weight: 700;
+}
+
+/* Global Top Navbar Styling */
+.global-navbar {
+    height: 70px;
+    background-color: var(--sidebar-bg);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px 0 24px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    position: relative;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.global-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.global-brand-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.global-brand-divider {
+    color: rgba(255, 255, 255, 0.2);
+    font-weight: 300;
+}
+
+.global-brand-subtitle {
+    font-size: 0.85rem;
+    color: #94A3B8;
+}
+
+.navbar-tabs {
+    display: flex;
+    gap: 8px;
+    height: 100%;
+    align-items: center;
+}
+
+.navbar-tab {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #94A3B8;
+    text-decoration: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid transparent;
+}
+
+.navbar-tab:hover {
+    color: #FFFFFF;
+    background-color: rgba(255, 255, 255, 0.05);
+    transform: translateY(-1px);
+}
+
+.navbar-tab.active {
+    color: #FFFFFF;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+    border-color: transparent;
+}
+
+/* Original Document Download Styling hover */
+.hover-success:hover {
+    background-color: var(--success-color) !important;
+    color: #FFFFFF !important;
+    border-color: var(--success-color) !important;
 }
