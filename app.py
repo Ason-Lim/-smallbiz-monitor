@@ -67,7 +67,7 @@ def b2b_gift():
     total_count = len(data)
     active_count = sum(1 for item in data if item['status'] == '입찰중')
     closing_soon_count = sum(1 for item in data if '임박' in item['status'] or '임박' in item['deadline'] or item['status'] == '마감임박')
-    public_agency_pct = int((sum(1 for item in data if item['institution_type'] == '공공기관') / total_count * 100)) if total_count > 0 else 0
+    public_agency_pct = int((sum(1 for item in data if item['institution_type'] in ('공공기관', '지자체 산하기관')) / total_count * 100)) if total_count > 0 else 0
     
     stats = {
         'total': total_count,
@@ -83,6 +83,34 @@ def b2b_gift():
         filters=filters,
         stats=stats
     )
+
+def format_hwpx_text(text):
+    if not text:
+        return ""
+    lines = text.split('\n')
+    formatted_lines = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith('【') or stripped.startswith('['):
+            formatted_lines.append(f'<div class="hwp-section-title">{line}</div>')
+        elif any(stripped.startswith(prefix) for prefix in ('1.', '2.', '3.', '4.', '5.', '-', '가.', '나.', '다.', '라.')):
+            formatted_lines.append(f'<p style="margin-left: 20px; font-weight: 500;">{line}</p>')
+        else:
+            formatted_lines.append(f'<p>{line}</p>')
+    return '\n'.join(formatted_lines)
+
+@app.route('/notice/<tab>/<doc_id>')
+def view_notice(tab, doc_id):
+    if tab == 'b2b_gift':
+        item = database.get_gift_bid_by_id(doc_id)
+    else:
+        item = database.get_program_by_id(doc_id)
+        
+    if not item:
+        return "공고를 찾을 수 없습니다.", 404
+        
+    item['formatted_html'] = format_hwpx_text(item.get('hwpx_parsed_text', ''))
+    return render_template('notice_detail.html', item=item, tab=tab)
 
 @app.route('/api/view_hwpx/<doc_id>')
 def api_view_hwpx(doc_id):

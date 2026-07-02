@@ -69,6 +69,7 @@
                 <select class="form-select-custom" id="institutionTypeSelect" name="institution_type">
                     <option value="전체" {% if filters.institution_type == '전체' %}selected{% endif %}>전체 유형</option>
                     <option value="공공기관" {% if filters.institution_type == '공공기관' %}selected{% endif %}>공공기관 (나라장터)</option>
+                    <option value="지자체 산하기관" {% if filters.institution_type == '지자체 산하기관' %}selected{% endif %}>지자체 산하기관 (나라장터)</option>
                     <option value="금융기관" {% if filters.institution_type == '금융기관' %}selected{% endif %}>금융기관 (은행/보험/카드)</option>
                 </select>
             </div>
@@ -370,7 +371,7 @@
                             <a href="/download_doc/{{ item.id }}?tab=b2b_gift" class="btn-card-view bg-white border border-success text-success text-decoration-none" style="transition: all 0.2s ease;">
                                 <i class="fa-solid fa-download"></i> 원문 다운로드
                             </a>
-                            <a href="{{ item.link }}" target="_blank" class="btn-card-link">
+                            <a href="/notice/b2b_gift/{{ item.id }}" target="_blank" class="btn-card-link">
                                 <i class="fa-solid fa-arrow-up-right-from-square"></i> 원본
                             </a>
                         </div>
@@ -439,7 +440,7 @@
                             <a href="/download_doc/{{ item.id }}?tab=smallbiz" class="btn-card-view bg-white border border-success text-success text-decoration-none">
                                 <i class="fa-solid fa-download"></i> 원문 다운로드
                             </a>
-                            <a href="{{ item.link }}" target="_blank" class="btn-card-link">
+                            <a href="/notice/smallbiz/{{ item.id }}" target="_blank" class="btn-card-link">
                                 <i class="fa-solid fa-arrow-up-right-from-square"></i> 원본
                             </a>
                         </div>

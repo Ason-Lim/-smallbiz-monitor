@@ -593,7 +593,14 @@ def init_db():
                 "2026-07-01", "2026-07-20", "노사협력처 복지부", "박민수 과장", "02-6311-1234",
                 "금 480,000,000원", "https://www.g2b.go.kr",
                 "【서울교통공사 공고 제2026-202호】\n\n2026년도 임직원 생일 및 가정의달 기념 온누리상품권 및 모바일 기프티콘 공급 계약 공고\n\n1. 입찰 개요\n  가. 건명: 임직원 생일 및 가정의달 기념품 지급 사업자 선정\n  나. 사업내용: 생일자 모바일 쿠폰 발송 대행 및 온누리상품권 모바일형 배부\n  다. 총예산액: 금 480,000,000원\n\n2. 입찰 참가 자격\n  가. 모바일 상품권 및 전자쿠폰 시스템 개발 및 발송 대행업 등록 기업\n  나. 대량 발송 및 CS 시스템 전담 고객센터를 보유한 업체\n\n3. 마감일자: 2026년 7월 20일 18:00\n4. 문의처: 노사협력처 복지부 (☎ 02-6311-1234)",
-                "입찰중", "공공기관"
+                "입찰중", "지자체 산하기관"
+            ),
+            (
+                "서울경제진흥원", "2026년도 서울경제진흥원 임직원 명절(설) 복지 선물세트 조달 입찰 공고",
+                "2026-06-15", "2026-07-10", "경영지원실 총무팀", "김한수 차장", "02-2222-3800",
+                "금 90,000,000원", "https://www.g2b.go.kr",
+                "【서울경제진흥원 공고 제2026-102호】\n\n2026년도 서울경제진흥원 임직원 설 명절 복지 선물 공급업체 선정을 위한 제안서 공모\n\n1. 공모 개요\n  가. 사업명: 2026년도 임직원 명절(설) 복지 선물 공급\n  나. 사업예산: 금 90,000,000원\n\n2. 접수 마감: 2026년 7월 10일 17:00\n3. 문의: 경영지원실 총무팀 (☎ 02-2222-3800)",
+                "입찰중", "지자체 산하기관"
             ),
             (
                 "국민건강보험공단", "2026년 추석 명절 임직원 사회공헌활동용 전통시장 온누리상품권 구매",
@@ -673,9 +680,14 @@ def get_all_programs(filters=None):
                 params.append(filters['status'])
         if filters.get('keyword'):
             like_keyword = 'ILIKE' if IS_POSTGRES else 'LIKE'
-            query += f" AND (title {like_keyword} {placeholder} OR content {like_keyword} {placeholder} OR organization {like_keyword} {placeholder})"
-            keyword_param = f"%{filters['keyword']}%"
-            params.extend([keyword_param, keyword_param, keyword_param])
+            normalized = filters['keyword'].replace(',', ' ')
+            sub_keywords = [k.strip() for k in normalized.split() if k.strip()]
+            if sub_keywords:
+                or_clauses = []
+                for k in sub_keywords:
+                    or_clauses.append(f"(title {like_keyword} {placeholder} OR content {like_keyword} {placeholder} OR organization {like_keyword} {placeholder})")
+                    params.extend([f"%{k}%", f"%{k}%", f"%{k}%"])
+                query += f" AND ({' OR '.join(or_clauses)})"
             
     query += " ORDER BY announcement_date DESC, id DESC"
     
@@ -773,9 +785,14 @@ def get_all_gift_bids(filters=None):
                 params.append(filters['status'])
         if filters.get('keyword'):
             like_keyword = 'ILIKE' if IS_POSTGRES else 'LIKE'
-            query += f" AND (title {like_keyword} {placeholder} OR institution {like_keyword} {placeholder} OR department {like_keyword} {placeholder})"
-            keyword_param = f"%{filters['keyword']}%"
-            params.extend([keyword_param, keyword_param, keyword_param])
+            normalized = filters['keyword'].replace(',', ' ')
+            sub_keywords = [k.strip() for k in normalized.split() if k.strip()]
+            if sub_keywords:
+                or_clauses = []
+                for k in sub_keywords:
+                    or_clauses.append(f"(title {like_keyword} {placeholder} OR institution {like_keyword} {placeholder} OR department {like_keyword} {placeholder})")
+                    params.extend([f"%{k}%", f"%{k}%", f"%{k}%"])
+                query += f" AND ({' OR '.join(or_clauses)})"
             
     query += " ORDER BY announcement_date DESC, id DESC"
     

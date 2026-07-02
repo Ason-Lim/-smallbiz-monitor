@@ -206,6 +206,24 @@ GIFT_CRAWL_TARGETS = [
         "institution_type": "공공기관"
     },
     {
+        "name": "서울교통공사 (G2B 입찰)",
+        "url": "https://www.g2b.go.kr",
+        "type": "g2b",
+        "institution_type": "지자체 산하기관"
+    },
+    {
+        "name": "서울경제진흥원 (G2B 입찰)",
+        "url": "https://www.g2b.go.kr",
+        "type": "g2b",
+        "institution_type": "지자체 산하기관"
+    },
+    {
+        "name": "부산경제진흥원 (G2B 입찰)",
+        "url": "https://www.g2b.go.kr",
+        "type": "g2b",
+        "institution_type": "지자체 산하기관"
+    },
+    {
         "name": "KB국민은행 공고",
         "url": "https://www.kbstar.com",
         "type": "bank",
