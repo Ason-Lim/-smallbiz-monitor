@@ -211,17 +211,17 @@
         <section class="stats-grid">
             {% if active_tab == 'b2b_gift' %}
             <a href="/b2b_gift?institution_type={{ filters.institution_type }}&keyword={{ filters.keyword }}&status=전체" style="text-decoration: none; display: block;">
-                <div class="stat-card stat-card-primary">
+                <div class="stat-card stat-card-primary {% if filters.status == '전체' %}stat-card-active{% endif %}">
                     <div class="stat-title">수집된 총 입찰 공고</div>
                     <div class="stat-value">{{ stats.total }}건</div>
                     <div class="stat-description">
                         <i class="fa-solid fa-database text-primary"></i>
-                        <span>로컬 DB 저장 기준</span>
+                        <span>전체 입찰 공고</span>
                     </div>
                 </div>
             </a>
             <a href="/b2b_gift?institution_type={{ filters.institution_type }}&keyword={{ filters.keyword }}&status=입찰중" style="text-decoration: none; display: block;">
-                <div class="stat-card stat-card-success">
+                <div class="stat-card stat-card-success {% if filters.status == '입찰중' %}stat-card-active{% endif %}">
                     <div class="stat-title">현재 입찰 진행 중</div>
                     <div class="stat-value">{{ stats.active }}건</div>
                     <div class="stat-description">
@@ -231,17 +231,27 @@
                 </div>
             </a>
             <a href="/b2b_gift?institution_type={{ filters.institution_type }}&keyword={{ filters.keyword }}&status=마감임박" style="text-decoration: none; display: block;">
-                <div class="stat-card stat-card-warning">
+                <div class="stat-card stat-card-warning {% if filters.status == '마감임박' %}stat-card-active{% endif %}">
                     <div class="stat-title">입찰 마감 임박</div>
                     <div class="stat-value">{{ stats.closing }}건</div>
                     <div class="stat-description">
                         <i class="fa-solid fa-clock text-warning"></i>
-                        <span>제안서 제출 권장</span>
+                        <span>마감 3일 이내 임박</span>
+                    </div>
+                </div>
+            </a>
+            <a href="/b2b_gift?institution_type={{ filters.institution_type }}&keyword={{ filters.keyword }}&status=입찰마감" style="text-decoration: none; display: block;">
+                <div class="stat-card stat-card-closed {% if filters.status in ('입찰마감', '마감', '과거완료') %}stat-card-active{% endif %}">
+                    <div class="stat-title">과거 입찰 완료</div>
+                    <div class="stat-value">{{ stats.closed }}건</div>
+                    <div class="stat-description">
+                        <i class="fa-solid fa-clock-rotate-left text-secondary"></i>
+                        <span>마감된 입찰 이력 조회</span>
                     </div>
                 </div>
             </a>
             <a href="/b2b_gift?status={{ filters.status }}&keyword={{ filters.keyword }}&institution_type=공공기관" style="text-decoration: none; display: block;">
-                <div class="stat-card stat-card-secondary">
+                <div class="stat-card stat-card-secondary {% if filters.institution_type == '공공기관' %}stat-card-active{% endif %}">
                     <div class="stat-title">공공기관 입찰 비율</div>
                     <div class="stat-value">{{ stats.public_pct }}%</div>
                     <div class="stat-description">
