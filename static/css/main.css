@@ -210,9 +210,37 @@ body {
 /* KPI Dash Cards */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
     margin-bottom: 40px;
+}
+
+@media (max-width: 1400px) {
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.stat-card-closed {
+    border-top: 4px solid #64748B;
+}
+
+.stat-card-closed .stat-value {
+    color: #475569;
+}
+
+.stat-card.stat-card-active {
+    box-shadow: 0 0 0 2px var(--primary-color), var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.program-card.card-closed {
+    background-color: #F8FAFC;
+    border-color: #E2E8F0;
+}
+
+.program-card.card-closed:hover {
+    border-color: #CBD5E1;
 }
 
 .stat-card {

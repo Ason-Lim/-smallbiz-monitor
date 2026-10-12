@@ -1,5 +1,231 @@
 import os
 import sqlite3
+import re
+from datetime import datetime, date
+
+def parse_deadline_date(deadline_str):
+    """
+    Parses a date string in various formats into a datetime.date object.
+    Supports 'YYYY-MM-DD', 'YYYY.MM.DD', 'YYYY/MM/DD', 'YYYY년 MM월 DD일',
+    and strings with trailing time like '2026-07-25 18:00'.
+    Returns None if no valid date can be extracted.
+    """
+    if not deadline_str:
+        return None
+    match = re.search(r'(\d{4})[-./년\s]+(\d{1,2})[-./월\s]+(\d{1,2})', str(deadline_str))
+    if match:
+        year, month, day = map(int, match.groups())
+        try:
+            return date(year, month, day)
+        except ValueError:
+            return None
+    return None
+
+def calculate_bid_status(deadline_str, current_status=None, ref_date=None):
+    """
+    Determines real-time bidding status based on the deadline and current date.
+    - If deadline date < ref_date: '입찰마감' (past completed bid)
+    - If 0 <= (deadline date - ref_date).days <= 3: '마감임박' (closing within 3 days)
+    - If deadline date > ref_date: '입찰중' (active ongoing bid)
+    - If no date parsed (e.g. '상시접수', '예산소진시'): retains current_status or '입찰중'
+    """
+    if ref_date is None:
+        ref_date = date.today()
+        
+    deadline_date = parse_deadline_date(deadline_str)
+    if deadline_date:
+        if deadline_date < ref_date:
+            return '입찰마감'
+        elif (deadline_date - ref_date).days <= 3:
+            return '마감임박'
+        else:
+            return '입찰중'
+            
+    if current_status in ('입찰마감', '마감', '마감완료'):
+        return '입찰마감'
+    return current_status or '입찰중'
+
+def calculate_program_status(deadline_str, current_status=None, ref_date=None):
+    """
+    Determines real-time support program status based on deadline and current date.
+    - If deadline date < ref_date: '마감완료'
+    - If 0 <= (deadline date - ref_date).days <= 3: '마감임박'
+    - If deadline date > ref_date: '모집중'
+    """
+    if ref_date is None:
+        ref_date = date.today()
+        
+    deadline_date = parse_deadline_date(deadline_str)
+    if deadline_date:
+        if deadline_date < ref_date:
+            return '마감완료'
+        elif (deadline_date - ref_date).days <= 3:
+            return '마감임박'
+        else:
+            return '모집중'
+            
+    if current_status in ('마감', '마감완료'):
+        return '마감완료'
+    return current_status or '모집중'
+
+NEW_Q4_GIFT_BIDS = [
+    {
+        "institution": "한국수력원자력",
+        "title": "2026년 하반기 임직원 복지포인트 대체 온누리상품권 조달 구매 공고",
+        "announcement_date": "2026-10-01",
+        "deadline": "2026-10-15",
+        "department": "경영관리처 총무복지팀",
+        "manager": "정다은 대리",
+        "contact": "054-704-2114",
+        "budget": "금 190,000,000원",
+        "link": "https://www.g2b.go.kr",
+        "institution_type": "공공기관",
+        "hwpx_parsed_text": "【한국수력원자력 공고 제2026-188호】\n\n2026년 하반기 임직원 복지포인트 대체 온누리상품권 조달 구매 전자입찰 공고\n\n한국수력원자력 본사 및 원자력본부 임직원들의 전통시장 소비 진작을 위하여 2026년 하반기 온누리상품권(모바일/지류) 납품사를 모집합니다.\n\n1. 입찰 개요\n  가. 사업명: 2026년 하반기 임직원 복지포인트 대체 온누리상품권 조달 구매\n  나. 사업예산: 금 190,000,000원 (부가세 면세)\n  다. 대상수량: 모바일 및 지류 상품권 혼합 약 3,800매\n\n2. 입찰 참가 자격\n  가. 중소벤처기업부 및 소상공인시장진흥공단 공인 온누리상품권 취급 기관\n  나. 신용평가등급 B- 이상 보유 기업\n\n3. 마감 기한: 2026년 10월 15일 18:00\n4. 문의: 경영관리처 총무복지팀 (☎ 054-704-2114)",
+        "status": "마감임박"
+    },
+    {
+        "institution": "한국가스공사",
+        "title": "2026년도 창립기념일 임직원 복지 기념선물(명품 한우 및 과일세트) 조달 입찰",
+        "announcement_date": "2026-10-05",
+        "deadline": "2026-10-25",
+        "department": "상생협력처 노사협력부",
+        "manager": "강태훈 차장",
+        "contact": "053-670-0114",
+        "budget": "금 220,000,000원",
+        "link": "https://www.g2b.go.kr",
+        "institution_type": "공공기관",
+        "hwpx_parsed_text": "【한국가스공사 공고 제2026-145호】\n\n2026년도 창립기념일 임직원 복지 기념선물 조달 입찰 공고\n\n임직원 복리후생 향상 및 지역 농축산물 소비 활성화를 위하여 창립기념 선물세트 공급 업체를 공모합니다.\n\n1. 공모 개요\n  가. 건명: 2026년도 창립기념일 임직원 기념 선물(한우 및 제철 과일세트) 구매\n  나. 예정예산: 금 220,000,000원\n  다. 지급대상: 전사 임직원 4,200명 (개별 택배 발송)\n\n2. 참가자격: HACCP 위생인증 보유 및 전국 냉장 배송망 보유 업체\n3. 마감일시: 2026년 10월 25일 17:00\n4. 문의처: 상생협력처 노사협력부 (☎ 053-670-0114)",
+        "status": "입찰중"
+    },
+    {
+        "institution": "하나은행",
+        "title": "2026년 하반기 우수고객 및 임직원 창립기념일 프리미엄 기프트 세트 납품사 비딩",
+        "announcement_date": "2026-10-08",
+        "deadline": "2026-10-28",
+        "department": "인재개발부 복지후생팀",
+        "manager": "최유진 책임",
+        "contact": "02-2002-2114",
+        "budget": "제안서 기준 산정 (약 1.8억원)",
+        "link": "https://www.kebhana.com",
+        "institution_type": "금융기관",
+        "hwpx_parsed_text": "【하나은행 공고 제2026-72호】\n\n2026년 하반기 우수고객 및 임직원 창립기념 프리미엄 기프트 세트 공급 제안요청서\n\n1. 개요: 창립기념일을 맞이하여 임직원 및 VIP 고객에게 지급할 프리미엄 선물세트(건강기능식품, 프리미엄 다기세트 등 선택형) 조달\n2. 예산규모: 약 1억 8,000만 원 상당\n3. 제안서 접수 마감: 2026년 10월 28일 18:00\n4. 문의: 인재개발부 복지후생팀 (☎ 02-2002-2114)",
+        "status": "입찰중"
+    },
+    {
+        "institution": "신한은행",
+        "title": "2026년도 임직원 생일 및 연말 맞춤형 모바일 기프티콘 발송 대행업체 선정 공고",
+        "announcement_date": "2026-10-10",
+        "deadline": "2026-11-05",
+        "department": "총무부 직원만족팀",
+        "manager": "오준서 과장",
+        "contact": "02-2151-3000",
+        "budget": "금 350,000,000원",
+        "link": "https://www.shinhan.com",
+        "institution_type": "금융기관",
+        "hwpx_parsed_text": "【신한은행 복지공고 제2026-55호】\n\n2026년도 하반기 및 2027년도 임직원 생일/연말 모바일 기프티콘 발송 대행 협력사 모집\n\n1. 사업내용: 전사 임직원 14,000명 대상 모바일 상품권 및 모바일 쿠폰 발송 대행 솔루션 제공\n2. 예산액: 금 350,000,000원\n3. 제출마감: 2026년 11월 5일 18:00\n4. 문의: 총무부 직원만족팀 (☎ 02-2151-3000)",
+        "status": "입찰중"
+    },
+    {
+        "institution": "한국도로공사",
+        "title": "2026년 동계 임직원 격려 기념품(방한의류 및 건강기능식품) 단가계약 구매",
+        "announcement_date": "2026-10-08",
+        "deadline": "2026-11-12",
+        "department": "총무처 복리후생부",
+        "manager": "임성현 차장",
+        "contact": "054-811-1000",
+        "budget": "금 280,000,000원",
+        "link": "https://www.g2b.go.kr",
+        "institution_type": "공공기관",
+        "hwpx_parsed_text": "【한국도로공사 공고 제2026-210호】\n\n2026년 동계 현장 근무 임직원 격려 기념품 단가계약 조달 공고\n\n1. 건명: 동계 방한 점퍼 및 홍삼/비타민 등 건강기능식품 단가계약\n2. 예산규모: 금 280,000,000원 (VAT 포함)\n3. 마감일: 2026년 11월 12일 16:00\n4. 제출처: 나라장터 전자입찰\n5. 문의처: 총무처 복리후생부 (☎ 054-811-1000)",
+        "status": "입찰중"
+    },
+    {
+        "institution": "경기도일자리재단",
+        "title": "2026년 연말 임직원 사기진작 기념 모바일 온누리상품권 공급 사업자 모집",
+        "announcement_date": "2026-10-11",
+        "deadline": "2026-11-20",
+        "department": "경영기획실 총무팀",
+        "manager": "한소희 대리",
+        "contact": "031-270-9600",
+        "budget": "금 75,000,000원",
+        "link": "https://www.g2b.go.kr",
+        "institution_type": "지자체 산하기관",
+        "hwpx_parsed_text": "【경기도일자리재단 공고 제2026-98호】\n\n2026년 연말 임직원 사기진작 기념 모바일 온누리상품권 조달 용역\n\n1. 사 업 명: 2026년 임직원 모바일 상품권 공급 사업자 선정\n2. 사업예산: 금 75,000,000원\n3. 공고마감: 2026년 11월 20일 17:00\n4. 문의: 경영기획실 총무팀 (☎ 031-270-9600)",
+        "status": "입찰중"
+    },
+    {
+        "institution": "한국토지주택공사(LH)",
+        "title": "2026년 연말 맞춤형 임직원 복지선물세트 납품업체 선정 입찰 공고",
+        "announcement_date": "2026-10-09",
+        "deadline": "2026-11-30",
+        "department": "노사협력처 후생복지부",
+        "manager": "배진우 과장",
+        "contact": "055-922-5114",
+        "budget": "금 410,000,000원",
+        "link": "https://www.g2b.go.kr",
+        "institution_type": "공공기관",
+        "hwpx_parsed_text": "【한국토지주택공사 공고 제2026-312호】\n\n2026년 연말 맞춤형 임직원 복지선물세트 조달 입찰 공고\n\n1. 입찰개요: 임직원 선택형 복지 기프트 세트(식품, 생활가전, 상품권 등 10종)\n2. 소요예산: 금 410,000,000원 (부가세 포함)\n3. 입찰마감: 2026년 11월 30일 18:00\n4. 문의: 노사협력처 후생복지부 (☎ 055-922-5114)",
+        "status": "입찰중"
+    },
+    {
+        "institution": "IBK기업은행",
+        "title": "2026년 동계 임직원 가족친화 감사 선물세트 공급 제안서 공모",
+        "announcement_date": "2026-10-10",
+        "deadline": "2026-12-10",
+        "department": "총무부 직원복지팀",
+        "manager": "윤서연 대리",
+        "contact": "02-729-6114",
+        "budget": "총 1억 2,000만원 내외",
+        "link": "https://www.ibk.co.kr",
+        "institution_type": "금융기관",
+        "hwpx_parsed_text": "【IBK기업은행 복지안내 제2026-30호】\n\n2026년도 동계 임직원 가족친화 감사 선물세트 공급사 모집\n\n1. 건명: 임직원 가족 대상 동계 힐링 패키지 선물세트 납품\n2. 예산: 총 1억 2,000만 원 내외\n3. 접수기한: 2026년 12월 10일 17:00까지\n4. 문의처: 총무부 직원복지팀 (☎ 02-729-6114)",
+        "status": "입찰중"
+    }
+]
+
+def sync_expired_statuses():
+    """
+    Synchronizes status column in the database with the current date.
+    Updates expired deadlines to '입찰마감' / '마감완료'.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        today = date.today()
+        placeholder = '%s' if IS_POSTGRES else '?'
+        
+        # Sync gift_bids
+        cursor.execute("SELECT id, deadline, status FROM gift_bids")
+        rows = cursor.fetchall()
+        for row in rows:
+            bid_id, dline, st = row[0], row[1], row[2]
+            computed = calculate_bid_status(dline, st, today)
+            if computed != st:
+                cursor.execute(f"UPDATE gift_bids SET status = {placeholder} WHERE id = {placeholder}", (computed, bid_id))
+                
+        # Sync programs
+        cursor.execute("SELECT id, deadline, status FROM programs")
+        p_rows = cursor.fetchall()
+        for row in p_rows:
+            prog_id, dline, st = row[0], row[1], row[2]
+            computed = calculate_program_status(dline, st, today)
+            if computed != st:
+                cursor.execute(f"UPDATE programs SET status = {placeholder} WHERE id = {placeholder}", (computed, prog_id))
+                
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Status sync notice: {e}")
+
+def ensure_q4_seed_data():
+    """
+    Idempotently seeds realistic Q4 current/upcoming gift bids if not already present.
+    """
+    try:
+        for bid in NEW_Q4_GIFT_BIDS:
+            insert_gift_bid(bid)
+    except Exception as e:
+        print(f"Q4 seed notice: {e}")
 
 DB_DIR = os.path.join(os.path.dirname(__file__), 'data')
 DB_PATH = os.path.join(DB_DIR, 'smallbiz_programs.db')
@@ -660,6 +886,12 @@ def init_db():
         conn.commit()
     conn.close()
 
+    # Synchronize expired statuses against current date
+    sync_expired_statuses()
+
+    # Ensure current Q4 gift bids exist
+    ensure_q4_seed_data()
+
 def get_all_programs(filters=None):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -679,14 +911,6 @@ def get_all_programs(filters=None):
             like_keyword = 'ILIKE' if IS_POSTGRES else 'LIKE'
             query += f" AND budget_delivery_type {like_keyword} {placeholder}"
             params.append(f"%{filters['delivery_type']}%")
-        if filters.get('status') and filters.get('status') != '전체':
-            if filters['status'] == '마감임박':
-                like_keyword = 'ILIKE' if IS_POSTGRES else 'LIKE'
-                query += f" AND (status {like_keyword} {placeholder} OR deadline {like_keyword} {placeholder} OR budget_size {like_keyword} {placeholder})"
-                params.extend(["%임박%", "%조기%", "%소진%"])
-            else:
-                query += f" AND status = {placeholder}"
-                params.append(filters['status'])
         if filters.get('keyword'):
             like_keyword = 'ILIKE' if IS_POSTGRES else 'LIKE'
             normalized = filters['keyword'].replace(',', ' ')
@@ -705,6 +929,20 @@ def get_all_programs(filters=None):
     
     result = get_dict_result(cursor, rows)
     conn.close()
+
+    today = date.today()
+    for item in result:
+        item['status'] = calculate_program_status(item['deadline'], item.get('status'), today)
+
+    if filters and filters.get('status') and filters.get('status') != '전체':
+        target = filters['status']
+        if target == '모집중':
+            result = [r for r in result if r['status'] == '모집중']
+        elif target == '마감임박':
+            result = [r for r in result if r['status'] == '마감임박']
+        elif target in ('마감완료', '마감'):
+            result = [r for r in result if r['status'] in ('마감완료', '마감')]
+
     return result
 
 def get_program_by_id(program_id):
@@ -720,6 +958,7 @@ def get_program_by_id(program_id):
     result = None
     if row:
         result = get_dict_result(cursor, [row])[0]
+        result['status'] = calculate_program_status(result['deadline'], result.get('status'))
     conn.close()
     return result
 
@@ -766,7 +1005,7 @@ def insert_program(data):
         data['sido'], data['sigungu'], data['organization'], data['announcement_date'], data['title'],
         data['content'], data['link'], data['deadline'], data['budget_size'], data['target_audience'],
         data['participation_method'], data['budget_delivery_type'], data['apply_method'], data['documents'],
-        data['contact_info'], data['hwpx_parsed_text'], data.get('status', '모집중')
+        data['contact_info'], data['hwpx_parsed_text'], calculate_program_status(data['deadline'], data.get('status', '모집중'))
     ))
     conn.commit()
     conn.close()
@@ -784,14 +1023,6 @@ def get_all_gift_bids(filters=None):
         if filters.get('institution_type') and filters.get('institution_type') != '전체':
             query += f" AND institution_type = {placeholder}"
             params.append(filters['institution_type'])
-        if filters.get('status') and filters.get('status') != '전체':
-            if filters['status'] == '마감임박':
-                like_keyword = 'ILIKE' if IS_POSTGRES else 'LIKE'
-                query += f" AND (status {like_keyword} {placeholder} OR deadline {like_keyword} {placeholder})"
-                params.extend(["%임박%", "%소진%"])
-            else:
-                query += f" AND status = {placeholder}"
-                params.append(filters['status'])
         if filters.get('keyword'):
             like_keyword = 'ILIKE' if IS_POSTGRES else 'LIKE'
             normalized = filters['keyword'].replace(',', ' ')
@@ -810,6 +1041,20 @@ def get_all_gift_bids(filters=None):
     
     result = get_dict_result(cursor, rows)
     conn.close()
+
+    today = date.today()
+    for item in result:
+        item['status'] = calculate_bid_status(item['deadline'], item.get('status'), today)
+
+    if filters and filters.get('status') and filters.get('status') != '전체':
+        target = filters['status']
+        if target == '입찰중':
+            result = [r for r in result if r['status'] == '입찰중']
+        elif target == '마감임박':
+            result = [r for r in result if r['status'] == '마감임박']
+        elif target in ('입찰마감', '마감', '과거완료'):
+            result = [r for r in result if r['status'] in ('입찰마감', '마감', '마감완료')]
+
     return result
 
 def get_gift_bid_by_id(gift_id):
@@ -824,6 +1069,7 @@ def get_gift_bid_by_id(gift_id):
     result = None
     if row:
         result = get_dict_result(cursor, [row])[0]
+        result['status'] = calculate_bid_status(result['deadline'], result.get('status'))
     conn.close()
     return result
 
@@ -847,7 +1093,7 @@ def insert_gift_bid(data):
     ''', (
         data['institution'], data['title'], data['announcement_date'], data['deadline'],
         data['department'], data['manager'], data['contact'], data['budget'], data['link'],
-        data['hwpx_parsed_text'], data.get('status', '입찰중'), data['institution_type']
+        data['hwpx_parsed_text'], calculate_bid_status(data['deadline'], data.get('status', '입찰중')), data['institution_type']
     ))
     conn.commit()
     conn.close()

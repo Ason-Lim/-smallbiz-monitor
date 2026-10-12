@@ -22,22 +22,42 @@ def index():
         'keyword': request.args.get('keyword', '').strip()
     }
     
-    # Query database with filters
-    data = database.get_all_programs(filters)
+    # Base query without status filter to calculate accurate overall dashboard KPIs
+    base_filters = {
+        'sido': filters['sido'],
+        'sigungu': filters['sigungu'],
+        'delivery_type': filters['delivery_type'],
+        'keyword': filters['keyword']
+    }
+    all_programs = database.get_all_programs(base_filters)
     
+    # Calculate complete dashboard statistics
+    total_count = len(all_programs)
+    active_count = sum(1 for item in all_programs if item['status'] == '모집중')
+    closing_soon_count = sum(1 for item in all_programs if item['status'] == '마감임박')
+    closed_count = sum(1 for item in all_programs if item['status'] in ('마감완료', '마감'))
+    direct_budget_pct = int((sum(1 for item in all_programs if '직접' in item['budget_delivery_type']) / total_count * 100)) if total_count > 0 else 0
+    
+    # Filter data for display according to status
+    if filters['status'] == '전체':
+        data = all_programs
+    elif filters['status'] == '모집중':
+        data = [item for item in all_programs if item['status'] == '모집중']
+    elif filters['status'] == '마감임박':
+        data = [item for item in all_programs if item['status'] == '마감임박']
+    elif filters['status'] in ('마감완료', '마감'):
+        data = [item for item in all_programs if item['status'] in ('마감완료', '마감')]
+    else:
+        data = all_programs
+        
     # Get distinct region options for filter dropdowns
     sidos, region_mapping = database.get_distinct_regions()
-    
-    # Calculate some dashboard statistics (KPIs)
-    total_count = len(data)
-    active_count = sum(1 for item in data if item['status'] == '모집중')
-    closing_soon_count = sum(1 for item in data if '마감' in item['status'] or '임박' in item['status'] or (item['status'] == '모집중' and '조기' in item['budget_size']))
-    direct_budget_pct = int((sum(1 for item in data if '직접' in item['budget_delivery_type']) / total_count * 100)) if total_count > 0 else 0
     
     stats = {
         'total': total_count,
         'active': active_count,
         'closing': closing_soon_count,
+        'closed': closed_count,
         'direct_pct': direct_budget_pct
     }
     
@@ -60,19 +80,37 @@ def b2b_gift():
         'keyword': request.args.get('keyword', '').strip()
     }
     
-    # Query database with filters
-    data = database.get_all_gift_bids(filters)
+    # Base query without status filter to calculate accurate overall dashboard KPIs
+    base_filters = {
+        'institution_type': filters['institution_type'],
+        'keyword': filters['keyword']
+    }
+    all_bids = database.get_all_gift_bids(base_filters)
     
-    # Calculate some dashboard statistics (KPIs)
-    total_count = len(data)
-    active_count = sum(1 for item in data if item['status'] == '입찰중')
-    closing_soon_count = sum(1 for item in data if '임박' in item['status'] or '임박' in item['deadline'] or item['status'] == '마감임박')
-    public_agency_pct = int((sum(1 for item in data if item['institution_type'] in ('공공기관', '지자체 산하기관')) / total_count * 100)) if total_count > 0 else 0
+    # Calculate complete dashboard statistics (KPIs)
+    total_count = len(all_bids)
+    active_count = sum(1 for item in all_bids if item['status'] == '입찰중')
+    closing_soon_count = sum(1 for item in all_bids if item['status'] == '마감임박')
+    closed_count = sum(1 for item in all_bids if item['status'] in ('입찰마감', '마감', '마감완료'))
+    public_agency_pct = int((sum(1 for item in all_bids if item['institution_type'] in ('공공기관', '지자체 산하기관')) / total_count * 100)) if total_count > 0 else 0
     
+    # Filter data for display according to status
+    if filters['status'] == '전체':
+        data = all_bids
+    elif filters['status'] == '입찰중':
+        data = [item for item in all_bids if item['status'] == '입찰중']
+    elif filters['status'] == '마감임박':
+        data = [item for item in all_bids if item['status'] == '마감임박']
+    elif filters['status'] in ('입찰마감', '마감', '과거완료'):
+        data = [item for item in all_bids if item['status'] in ('입찰마감', '마감', '마감완료')]
+    else:
+        data = all_bids
+        
     stats = {
         'total': total_count,
         'active': active_count,
         'closing': closing_soon_count,
+        'closed': closed_count,
         'public_pct': public_agency_pct
     }
     

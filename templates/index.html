@@ -79,9 +79,9 @@
                 <label class="form-label-custom" for="statusSelect">진행 상태</label>
                 <select class="form-select-custom" id="statusSelect" name="status">
                     <option value="전체" {% if filters.status == '전체' %}selected{% endif %}>전체 상태</option>
-                    <option value="입찰중" {% if filters.status == '입찰중' %}selected{% endif %}>입찰중</option>
-                    <option value="마감임박" {% if filters.status == '마감임박' %}selected{% endif %}>마감임박</option>
-                    <option value="입찰마감" {% if filters.status == '입찰마감' %}selected{% endif %}>입찰마감</option>
+                    <option value="입찰중" {% if filters.status == '입찰중' %}selected{% endif %}>입찰중 (접수 가능)</option>
+                    <option value="마감임박" {% if filters.status == '마감임박' %}selected{% endif %}>마감임박 (3일 이내)</option>
+                    <option value="입찰마감" {% if filters.status in ('입찰마감', '마감', '과거완료') %}selected{% endif %}>입찰마감 (과거 입찰 완료)</option>
                 </select>
             </div>
 
@@ -297,11 +297,29 @@
         <!-- Program List Section -->
         <section>
             <div class="list-section-header">
-                <h3 class="fw-bold fs-5 text-dark m-0">
+                <h3 class="fw-bold fs-5 text-dark m-0 d-flex align-items-center gap-2">
                     {% if active_tab == 'b2b_gift' %}
-                    📊 B2B 선물 입찰 검색 결과
+                    <span>📊 B2B 선물 입찰 검색 결과</span>
+                    {% if filters.status in ('입찰마감', '마감', '과거완료') %}
+                    <span class="badge bg-secondary text-white" style="font-size: 0.75rem; font-weight: 500;">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> 과거 입찰 완료 이력
+                    </span>
+                    {% elif filters.status == '입찰중' %}
+                    <span class="badge bg-success text-white" style="font-size: 0.75rem; font-weight: 500;">
+                        <i class="fa-solid fa-circle-check me-1"></i> 현재 진행 중 공고
+                    </span>
+                    {% elif filters.status == '마감임박' %}
+                    <span class="badge bg-warning text-dark" style="font-size: 0.75rem; font-weight: 500;">
+                        <i class="fa-solid fa-clock me-1"></i> 마감 임박 공고
+                    </span>
+                    {% endif %}
                     {% else %}
-                    📊 지원사업 맞춤 검색 결과
+                    <span>📊 지원사업 맞춤 검색 결과</span>
+                    {% if filters.status in ('마감완료', '마감') %}
+                    <span class="badge bg-secondary text-white" style="font-size: 0.75rem; font-weight: 500;">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> 과거 마감 완료 사업
+                    </span>
+                    {% endif %}
                     {% endif %}
                 </h3>
                 <span class="list-count-badge">검색 결과: {{ data|length }}건</span>
@@ -312,7 +330,7 @@
                 {% for item in data %}
                 {% if active_tab == 'b2b_gift' %}
                 <!-- B2B Gift bid Card -->
-                <article class="program-card">
+                <article class="program-card {% if item.status in ('입찰마감', '마감', '마감완료') %}card-closed{% endif %}">
                     <div>
                         <!-- Institution Type & Status Badges -->
                         <div class="card-header-area">
@@ -327,7 +345,13 @@
                             </div>
                             
                             <span class="badge-status {% if item.status == '입찰중' %}status-active{% elif item.status == '마감임박' %}status-warning{% else %}status-closed{% endif %}">
-                                {{ item.status }}
+                                {% if item.status == '입찰중' %}
+                                <i class="fa-solid fa-circle-check me-1"></i> 입찰중
+                                {% elif item.status == '마감임박' %}
+                                <i class="fa-solid fa-clock me-1"></i> 마감임박
+                                {% else %}
+                                <i class="fa-solid fa-lock me-1"></i> 입찰마감
+                                {% endif %}
                             </span>
                         </div>
 
@@ -353,7 +377,14 @@
                             </li>
                             <li class="info-bullet-item">
                                 <span class="bullet-label"><i class="fa-solid fa-calendar-day text-danger me-1"></i> 입찰 마감일</span>
-                                <span class="bullet-value">{{ item.deadline }}</span>
+                                <span class="bullet-value">
+                                    {{ item.deadline }}
+                                    {% if item.status in ('입찰마감', '마감', '마감완료') %}
+                                    <span class="badge bg-secondary text-white ms-1" style="font-size: 0.7rem; font-weight: 500;">마감완료</span>
+                                    {% elif item.status == '마감임박' %}
+                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem; font-weight: 500;">마감임박</span>
+                                    {% endif %}
+                                </span>
                             </li>
                         </ul>
                     </div>
