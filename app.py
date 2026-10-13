@@ -1,3 +1,5 @@
+import io
+import bid_document_generator
 import os
 import re
 import urllib.parse
@@ -147,8 +149,11 @@ def view_notice(tab, doc_id):
     if not item:
         return "공고를 찾을 수 없습니다.", 404
         
-    item['formatted_html'] = format_hwpx_text(item.get('hwpx_parsed_text', ''))
-    return render_template('notice_detail.html', item=item, tab=tab)
+    bundle = bid_document_generator.generate_full_bid_bundle(item, tab=tab)
+    item['bundle'] = bundle
+    item['formatted_html'] = bundle['html_sections']['full']
+    item['attachments'] = bundle['attachments_list']
+    return render_template('notice_detail.html', item=item, tab=tab, bundle=bundle)
 
 @app.route('/api/view_hwpx/<doc_id>')
 def api_view_hwpx(doc_id):
@@ -159,7 +164,39 @@ def api_view_hwpx(doc_id):
         doc_item = database.get_program_by_id(doc_id)
         
     if doc_item:
-        return jsonify({"success": True, "html_content": doc_item["hwpx_parsed_text"]})
+        bundle = bid_document_generator.generate_full_bid_bundle(doc_item, tab=tab)
+        return jsonify({
+            "success": True,
+            "title": doc_item['title'],
+            "org": doc_item.get('institution') or doc_item.get('organization', '소관 부처'),
+            "date": doc_item.get('announcement_date', ''),
+            "deadline": doc_item.get('deadline', ''),
+            "budget": doc_item.get('budget') or doc_item.get('budget_size', ''),
+            "html_content": bundle['html_sections']['full'],
+            "sections": bundle['html_sections'],
+            "attachments": bundle['attachments_list']
+        })
+    return jsonify({"success": False, "message": "파일을 찾을 수 없습니다."}), 404
+
+@app.route('/api/notice_attachments/<doc_id>')
+def api_notice_attachments(doc_id):
+    tab = request.args.get('tab', 'smallbiz')
+    if tab == 'b2b_gift':
+        doc_item = database.get_gift_bid_by_id(doc_id)
+    else:
+        doc_item = database.get_program_by_id(doc_id)
+        
+    if doc_item:
+        bundle = bid_document_generator.generate_full_bid_bundle(doc_item, tab=tab)
+        return jsonify({
+            "success": True,
+            "title": doc_item['title'],
+            "org": doc_item.get('institution') or doc_item.get('organization', '소관 부처'),
+            "date": doc_item.get('announcement_date', ''),
+            "deadline": doc_item.get('deadline', ''),
+            "budget": doc_item.get('budget') or doc_item.get('budget_size', ''),
+            "attachments": bundle['attachments_list']
+        })
     return jsonify({"success": False, "message": "파일을 찾을 수 없습니다."}), 404
 
 @app.route('/api/run_crawler')
@@ -239,44 +276,83 @@ def download():
 @app.route('/download_doc/<doc_id>')
 def download_doc(doc_id):
     tab = request.args.get('tab', 'smallbiz')
+    file_type = request.args.get('file_type', 'zip')
+    fmt = request.args.get('format', 'hwpx')
+    
     if tab == 'b2b_gift':
         doc_item = database.get_gift_bid_by_id(doc_id)
     else:
         doc_item = database.get_program_by_id(doc_id)
         
-    if doc_item:
-        title = doc_item['title']
-        # Clean title for filename
-        clean_title = re.sub(r'[\\/*?:"<>|]', "", title).strip()
-        text_content = f"=== {doc_item.get('title', '공고문')} ===\n"
-        if tab == 'b2b_gift':
-            text_content += f"기관명: {doc_item.get('institution')}\n"
-            text_content += f"예산규모: {doc_item.get('budget')}\n"
-            text_content += f"담당부서: {doc_item.get('department')}\n"
-            text_content += f"담당자: {doc_item.get('manager')} ({doc_item.get('contact')})\n"
-            text_content += f"공고일자: {doc_item.get('announcement_date')} | 입찰마감일자: {doc_item.get('deadline')}\n\n"
-        else:
-            text_content += f"담당기관: {doc_item.get('organization')}\n"
-            text_content += f"지역: {doc_item.get('sido')} {doc_item.get('sigungu')}\n"
-            text_content += f"공고일자: {doc_item.get('announcement_date')} | 접수마감일자: {doc_item.get('deadline')}\n\n"
-            
-        text_content += "--- 상세 내용 ---\n"
-        text_content += doc_item.get('hwpx_parsed_text', '')
+    if not doc_item:
+        return "공고를 찾을 수 없습니다.", 404
         
-        # Save temporary file or send from memory
-        from io import BytesIO
-        mem_file = BytesIO()
-        mem_file.write(text_content.encode('utf-8'))
-        mem_file.seek(0)
-        
-        filename = f"[공고문]_{clean_title}.txt"
+    org = doc_item.get('institution') if tab == 'b2b_gift' else doc_item.get('organization', '기관')
+    clean_title = bid_document_generator.clean_filename(doc_item.get('title', '공고문'))
+    bundle = bid_document_generator.generate_full_bid_bundle(doc_item, tab=tab)
+    
+    if file_type == 'zip':
+        zip_buf = bid_document_generator.create_bid_zip_bytes(doc_item, tab=tab)
+        filename = f"[전체첨부파일]_{org}_{clean_title}.zip"
         encoded_filename = urllib.parse.quote(filename)
-        
         return Response(
-            mem_file,
-            mimetype="text/plain; charset=utf-8",
+            zip_buf,
+            mimetype="application/zip",
             headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"}
         )
+    elif file_type == 'announcement':
+        if fmt == 'txt':
+            content = bundle['announcement'].encode('utf-8')
+            mimetype = "text/plain; charset=utf-8"
+            filename = f"[입찰공고문]_{org}_{clean_title}.txt"
+            buf = io.BytesIO(content)
+        else:
+            buf = bid_document_generator.create_hwpx_bytes(f"입찰공고문 - {clean_title}", bundle['announcement'])
+            mimetype = "application/hwp+zip"
+            filename = f"[입찰공고문]_{org}_{clean_title}.hwpx"
+    elif file_type == 'rfp':
+        if fmt == 'txt':
+            content = bundle['rfp'].encode('utf-8')
+            mimetype = "text/plain; charset=utf-8"
+            filename = f"[제안요청서]_{org}_{clean_title}_RFP.txt"
+            buf = io.BytesIO(content)
+        else:
+            buf = bid_document_generator.create_hwpx_bytes(f"제안요청서 - {clean_title}", bundle['rfp'])
+            mimetype = "application/hwp+zip"
+            filename = f"[제안요청서]_{org}_{clean_title}_RFP.hwpx"
+    elif file_type == 'spec':
+        if fmt == 'txt':
+            content = bundle['specification'].encode('utf-8')
+            mimetype = "text/plain; charset=utf-8"
+            filename = f"[과업지시서]_{org}_{clean_title}_과업지시서.txt"
+            buf = io.BytesIO(content)
+        else:
+            buf = bid_document_generator.create_hwpx_bytes(f"과업지시서 - {clean_title}", bundle['specification'])
+            mimetype = "application/hwp+zip"
+            filename = f"[과업지시서]_{org}_{clean_title}_과업지시서.hwpx"
+    elif file_type == 'forms':
+        if fmt == 'txt':
+            content = bundle['forms'].encode('utf-8')
+            mimetype = "text/plain; charset=utf-8"
+            filename = f"[제출서식]_{org}_{clean_title}_입찰참가서식.txt"
+            buf = io.BytesIO(content)
+        else:
+            buf = bid_document_generator.create_hwpx_bytes(f"입찰서식 - {clean_title}", bundle['forms'])
+            mimetype = "application/hwp+zip"
+            filename = f"[제출서식]_{org}_{clean_title}_입찰참가서식.hwpx"
+    else: # txt or full
+        content = bundle['full_text'].encode('utf-8')
+        mimetype = "text/plain; charset=utf-8"
+        filename = f"[공고문_통합전문]_{org}_{clean_title}.txt"
+        buf = io.BytesIO(content)
+        
+    encoded_filename = urllib.parse.quote(filename)
+    return Response(
+        buf,
+        mimetype=mimetype,
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"}
+    )
+
 @app.route('/api/debug_db')
 def debug_db():
     try:

@@ -409,7 +409,7 @@
                             <button type="button" class="btn-card-view" onclick="openHwpxViewer('{{ item.id }}', '{{ item.title }}')">
                                 <i class="fa-regular fa-file-word"></i> 공고문 뷰어
                             </button>
-                            <a href="/download_doc/{{ item.id }}?tab=b2b_gift" class="btn-card-view bg-white border border-success text-success text-decoration-none" style="transition: all 0.2s ease;">
+                            <a href="/download_doc/{{ item.id }}?tab=b2b_gift&file_type=zip" class="btn-card-view bg-white border border-success text-success text-decoration-none" onclick="event.preventDefault(); openAttachmentModal('{{ item.id }}', '{{ item.title | escape }}', 'b2b_gift');" style="transition: all 0.2s ease;">
                                 <i class="fa-solid fa-download"></i> 원문 다운로드
                             </a>
                             <a href="/notice/b2b_gift/{{ item.id }}" target="_blank" class="btn-card-link">
@@ -478,7 +478,7 @@
                             <button type="button" class="btn-card-view" onclick="openHwpxViewer('{{ item.id }}', '{{ item.title }}')">
                                 <i class="fa-regular fa-file-pdf"></i> 공고문 뷰어
                             </button>
-                            <a href="/download_doc/{{ item.id }}?tab=smallbiz" class="btn-card-view bg-white border border-success text-success text-decoration-none">
+                            <a href="/download_doc/{{ item.id }}?tab=smallbiz&file_type=zip" class="btn-card-view bg-white border border-success text-success text-decoration-none" onclick="event.preventDefault(); openAttachmentModal('{{ item.id }}', '{{ item.title | escape }}', 'smallbiz');">
                                 <i class="fa-solid fa-download"></i> 원문 다운로드
                             </a>
                             <a href="/notice/smallbiz/{{ item.id }}" target="_blank" class="btn-card-link">
@@ -526,29 +526,129 @@
 <!-- Modal 2: Premium HWPX Document Viewer -->
 <div class="modal fade" id="hwpxViewerModal" tabindex="-1" aria-labelledby="viewerModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: var(--shadow-lg);">
-            <div class="modal-header bg-dark text-white border-0 py-3" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
-                <h5 class="modal-title fs-6 fw-bold" id="viewerModalLabel">
-                    <i class="fa-regular fa-file-word text-primary me-2"></i> 공고 문서 표준 웹 뷰어 (HWPX)
+        <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: var(--shadow-lg);">
+            <div class="modal-header bg-dark text-white border-0 py-3 d-flex justify-content-between align-items-center" style="border-top-left-radius: 14px; border-top-right-radius: 14px;">
+                <h5 class="modal-title fs-6 fw-bold d-flex align-items-center" id="viewerModalLabel">
+                    <i class="fa-solid fa-file-invoice text-primary me-2 fs-5"></i> 공고 문서 표준 웹 뷰어 (HWPX / 제안요청서 전문)
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="#" id="modalHeaderZipBtn" class="btn btn-sm btn-success fw-bold text-white">
+                        <i class="fa-solid fa-file-zipper me-1"></i> 전체 ZIP 다운로드
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="window.print();">
+                        <i class="fa-solid fa-print me-1"></i> 인쇄
+                    </button>
+                    <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
             </div>
+            
+            <!-- Sticky Section Navigation Tabs Bar -->
+            <div class="bg-white border-bottom px-4 pt-3 pb-2 sticky-top" style="z-index: 5;">
+                <ul class="nav nav-pills gap-2 flex-wrap" id="modalViewerTabNav">
+                    <li class="nav-item">
+                        <button class="nav-link active fw-bold btn-sm" id="btnTabFull" onclick="switchViewerTab('full')">
+                            <i class="fa-solid fa-book-open me-1"></i> 전체 공고문 통합보기
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold btn-sm" id="btnTabAnn" onclick="switchViewerTab('announcement')">
+                            <i class="fa-solid fa-file-contract me-1"></i> 1. 입찰공고문
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold btn-sm" id="btnTabRfp" onclick="switchViewerTab('rfp')">
+                            <i class="fa-solid fa-list-check me-1"></i> 2. 제안요청서(RFP)
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold btn-sm" id="btnTabSpec" onclick="switchViewerTab('specification')">
+                            <i class="fa-solid fa-boxes-stacked me-1"></i> 3. 과업지시서/규격서
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold btn-sm" id="btnTabForms" onclick="switchViewerTab('forms')">
+                            <i class="fa-solid fa-signature me-1"></i> 4. 입찰참가서식집
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold btn-sm" id="btnTabAtt" onclick="switchViewerTab('attachments')">
+                            <i class="fa-solid fa-paperclip me-1"></i> 5. 첨부파일 목록 및 다운로드
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
             <div class="modal-body bg-light py-4" style="max-height: 75vh;">
-                <div class="hwp-doc-container">
-                    <div class="hwp-doc-header">
-                        <div class="hwp-doc-title" id="modalFileTitle">공고문 원문</div>
-                        <div class="hwp-doc-meta">
-                            <span id="modalDocOrg">소관 부처 및 지자체</span>
-                            <span id="modalDocDate">공고일자</span>
+                <div class="hwp-doc-container bg-white p-4 p-md-5 rounded shadow-xs" style="max-width: 950px; margin: 0 auto;">
+                    <div class="hwp-doc-header border-bottom pb-3 mb-4">
+                        <div class="hwp-doc-title fs-4 fw-bold text-dark" id="modalFileTitle">공고문 원문</div>
+                        <div class="hwp-doc-meta d-flex justify-content-between flex-wrap gap-2 text-muted small mt-2">
+                            <span><strong>소관:</strong> <span id="modalDocOrg">소관 부처</span></span>
+                            <span><strong>예산:</strong> <span id="modalDocBudget" class="text-primary fw-bold"></span></span>
+                            <span><strong>공고일:</strong> <span id="modalDocDate"></span></span>
+                            <span><strong>마감일:</strong> <span id="modalDocDeadline" class="text-danger fw-bold"></span></span>
                         </div>
                     </div>
                     <div class="hwp-doc-body" id="hwpxRenderCanvas">
-                        <!-- Hwp summary content goes here -->
+                        <!-- Dynamic rendered content -->
                     </div>
                 </div>
             </div>
-            <div class="modal-footer bg-white border-top-0 py-3" style="border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+            <div class="modal-footer bg-white border-top-0 py-3 d-flex justify-content-between" style="border-bottom-left-radius: 14px; border-bottom-right-radius: 14px;">
+                <button type="button" class="btn btn-outline-success fw-semibold" id="modalFooterAttCenterBtn">
+                    <i class="fa-solid fa-cloud-arrow-down me-1"></i> 첨부파일 다운로드 센터 열기
+                </button>
                 <button type="button" class="btn btn-secondary px-4 py-2 fw-semibold" style="border-radius: 8px;" data-bs-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 3: Attachment Download Center Modal -->
+<div class="modal fade" id="attachmentDownloadModal" tabindex="-1" aria-labelledby="attModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: var(--shadow-lg);">
+            <div class="modal-header bg-dark text-white border-0 py-3" style="border-top-left-radius: 14px; border-top-right-radius: 14px;">
+                <h5 class="modal-title fs-6 fw-bold" id="attModalLabel">
+                    <i class="fa-solid fa-cloud-arrow-down text-success me-2 fs-5"></i> 입찰 공고문 첨부파일 다운로드 센터
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light p-4">
+                <!-- Bid Meta Card -->
+                <div class="card p-3 mb-3 border-0 shadow-xs bg-white rounded-3">
+                    <h6 class="fw-bold text-dark mb-1" id="attModalTitle">공고명</h6>
+                    <div class="d-flex flex-wrap gap-3 small text-muted mt-1">
+                        <span><strong>소관:</strong> <span id="attModalOrg"></span></span>
+                        <span><strong>예산:</strong> <span id="attModalBudget" class="text-primary fw-bold"></span></span>
+                        <span><strong>마감일:</strong> <span id="attModalDeadline" class="text-danger fw-bold"></span></span>
+                    </div>
+                </div>
+
+                <!-- ZIP All-in-one Banner -->
+                <div class="p-3 bg-white border border-success border-2 rounded-3 mb-4 text-center shadow-xs">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="text-start">
+                            <div class="fw-bold text-dark fs-6"><i class="fa-solid fa-file-zipper text-success me-1"></i> 전체 첨부파일 일괄 압축팩 (ZIP)</div>
+                            <div class="text-muted small">입찰공고문(HWPX), 제안요청서(HWPX), 과업지시서(HWPX), 서식집(HWPX), 통합전문(TXT) 일괄 패키지</div>
+                        </div>
+                        <a href="#" id="attModalZipBtn" class="btn btn-success fw-bold text-white px-3 py-2">
+                            <i class="fa-solid fa-download me-1"></i> 일괄 다운로드 (ZIP)
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Individual Attachments -->
+                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-list-check text-primary me-2"></i>개별 첨부파일 목록</h6>
+                <div class="d-flex flex-column gap-2" id="attModalItemsContainer">
+                    <!-- Dynamically injected -->
+                </div>
+            </div>
+            <div class="modal-footer bg-white border-top-0 py-3 d-flex justify-content-between" style="border-bottom-left-radius: 14px; border-bottom-right-radius: 14px;">
+                <button type="button" class="btn btn-outline-primary fw-semibold" id="attModalOpenViewerBtn">
+                    <i class="fa-solid fa-book-open me-1"></i> 공고문 뷰어로 전체 보기
+                </button>
+                <button type="button" class="btn btn-secondary px-4 fw-semibold" data-bs-dismiss="modal">닫기</button>
             </div>
         </div>
     </div>
@@ -722,19 +822,37 @@
         }
     }
 
-    // Document Viewer detail fetcher
+    // Enhanced Document Viewer and Attachment Center Handlers
+    let currentDocBundle = null;
+    let currentViewerDocId = null;
+    let currentViewerDocTitle = '';
+
     function openHwpxViewer(docId, docTitle) {
+        currentViewerDocId = docId;
+        currentViewerDocTitle = docTitle;
         document.getElementById('modalFileTitle').innerText = docTitle;
         const canvas = document.getElementById('hwpxRenderCanvas');
         const modalOrg = document.getElementById('modalDocOrg');
         const modalDate = document.getElementById('modalDocDate');
+        const modalBudget = document.getElementById('modalDocBudget');
+        const modalDeadline = document.getElementById('modalDocDeadline');
         const activeTab = document.getElementById('activeTabInput').value;
+
+        // Reset tab buttons to 'full'
+        resetViewerTabNav('full');
+
+        // Setup Zip download button in modal header
+        document.getElementById('modalHeaderZipBtn').href = `/download_doc/${docId}?tab=${activeTab}&file_type=zip`;
+        document.getElementById('modalFooterAttCenterBtn').onclick = () => {
+            bootstrap.Modal.getInstance(document.getElementById('hwpxViewerModal')).hide();
+            openAttachmentModal(docId, docTitle, activeTab);
+        };
 
         // Loading spinner
         canvas.innerHTML = `
             <div class="text-center my-5 text-muted">
                 <div class="spinner-border text-primary mb-3" role="status"></div>
-                <p>한글(HWPX) 표준 형식을 웹 문서로 고정밀 디컴파일 중입니다...</p>
+                <p class="fw-semibold">공고문 전문, 제안요청서(RFP), 과업지시서 표준 문서를 불러오는 중입니다...</p>
             </div>`;
 
         const viewModal = new bootstrap.Modal(document.getElementById('hwpxViewerModal'));
@@ -744,33 +862,14 @@
             .then(response => response.json())
             .then(res => {
                 if(res.success) {
-                    const lines = res.html_content.split('\n');
-                    let formattedHtml = '';
-                    
-                    lines.forEach(line => {
-                        if (line.trim().startsWith('【') || line.trim().startsWith('[')) {
-                            formattedHtml += `<div class="hwp-section-title">${line}</div>`;
-                        } else if (line.trim().startsWith('1.') || line.trim().startsWith('2.') || line.trim().startsWith('3.') || line.trim().startsWith('-')) {
-                            formattedHtml += `<p style="margin-left: 20px; font-weight: 500;">${line}</p>`;
-                        } else {
-                            formattedHtml += `<p>${line}</p>`;
-                        }
-                    });
-                    
-                    canvas.innerHTML = formattedHtml;
+                    currentDocBundle = res;
+                    modalOrg.innerText = res.org || '';
+                    modalDate.innerText = res.date || '';
+                    if (modalBudget) modalBudget.innerText = res.budget || '';
+                    if (modalDeadline) modalDeadline.innerText = res.deadline ? (res.deadline + ' 18:00') : '';
 
-                    // Pull metadata from the DOM cards
-                    const programCards = document.querySelectorAll('.program-card');
-                    programCards.forEach(card => {
-                        const titleEl = card.querySelector('.program-title');
-                        if (titleEl && titleEl.innerText === docTitle) {
-                            const org = card.querySelector('.organization-name').innerText;
-                            const date = card.querySelector('.date-indicator').innerText;
-                            modalOrg.innerText = org;
-                            modalDate.innerText = date;
-                        }
-                    });
-
+                    // Display full combined view by default
+                    canvas.innerHTML = res.html_content;
                 } else {
                     canvas.innerHTML = `<div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation"></i> 공고 문서 본문을 해석하는 데 실패했습니다.</div>`;
                 }
@@ -779,6 +878,125 @@
                 canvas.innerHTML = `<div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation"></i> 서버 통신 중 오류가 발생했습니다.</div>`;
             });
     }
-</script>
+
+    function resetViewerTabNav(activeKey) {
+        const mapping = {
+            'full': 'btnTabFull',
+            'announcement': 'btnTabAnn',
+            'rfp': 'btnTabRfp',
+            'specification': 'btnTabSpec',
+            'forms': 'btnTabForms',
+            'attachments': 'btnTabAtt'
+        };
+        Object.values(mapping).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active');
+        });
+        const activeEl = document.getElementById(mapping[activeKey]);
+        if (activeEl) activeEl.classList.add('active');
+    }
+
+    function switchViewerTab(tabKey) {
+        if (!currentDocBundle) return;
+        resetViewerTabNav(tabKey);
+        const canvas = document.getElementById('hwpxRenderCanvas');
+
+        if (tabKey === 'full') {
+            canvas.innerHTML = currentDocBundle.html_content;
+        } else if (tabKey === 'attachments') {
+            const activeTab = document.getElementById('activeTabInput').value;
+            let attHtml = `
+                <div class="p-3 bg-light border rounded mb-3 text-center">
+                    <h5 class="fw-bold text-dark mb-1">📥 첨부파일 일괄 및 개별 다운로드</h5>
+                    <p class="text-muted small mb-3">필요한 형식(HWPX / TXT / ZIP)을 선택하여 즉시 다운로드할 수 있습니다.</p>
+                    <a href="/download_doc/${currentViewerDocId}?tab=${activeTab}&file_type=zip" class="btn btn-success fw-bold text-white shadow-sm">
+                        <i class="fa-solid fa-file-zipper me-1"></i> 전체 첨부파일 일괄 다운로드 (ZIP)
+                    </a>
+                </div>
+                <div class="row g-3">`;
+
+            currentDocBundle.attachments.forEach(att => {
+                attHtml += `
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded bg-light h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge ${att.badge_class}">${att.badge}</span>
+                                    <span class="text-muted small">${att.size}</span>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">${att.display_name}</h6>
+                                <p class="text-muted small mb-2">${att.desc}</p>
+                            </div>
+                            <a href="${att.download_url}" class="btn btn-outline-primary btn-sm w-100">
+                                <i class="fa-solid fa-download me-1"></i> 파일 다운로드
+                            </a>
+                        </div>
+                    </div>`;
+            });
+            attHtml += `</div>`;
+            canvas.innerHTML = attHtml;
+        } else {
+            const sectionHtml = currentDocBundle.sections[tabKey] || '<p class="text-muted">내용이 없습니다.</p>';
+            canvas.innerHTML = sectionHtml;
+        }
+    }
+
+    function openAttachmentModal(docId, docTitle, tab) {
+        currentViewerDocId = docId;
+        currentViewerDocTitle = docTitle;
+        document.getElementById('attModalTitle').innerText = docTitle;
+        const container = document.getElementById('attModalItemsContainer');
+        const modalOrg = document.getElementById('attModalOrg');
+        const modalBudget = document.getElementById('attModalBudget');
+        const modalDeadline = document.getElementById('attModalDeadline');
+
+        document.getElementById('attModalZipBtn').href = `/download_doc/${docId}?tab=${tab}&file_type=zip`;
+        document.getElementById('attModalOpenViewerBtn').onclick = () => {
+            bootstrap.Modal.getInstance(document.getElementById('attachmentDownloadModal')).hide();
+            openHwpxViewer(docId, docTitle);
+        };
+
+        container.innerHTML = `
+            <div class="text-center my-4 text-muted">
+                <div class="spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
+                <p class="small">첨부파일 목록을 조회하는 중입니다...</p>
+            </div>`;
+
+        const attModal = new bootstrap.Modal(document.getElementById('attachmentDownloadModal'));
+        attModal.show();
+
+        fetch(`/api/notice_attachments/${docId}?tab=${tab}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    modalOrg.innerText = data.org || '';
+                    modalBudget.innerText = data.budget || '';
+                    modalDeadline.innerText = data.deadline ? (data.deadline + ' 18:00') : '';
+
+                    let html = '';
+                    data.attachments.forEach(att => {
+                        html += `
+                            <div class="p-3 border rounded bg-white d-flex align-items-center justify-content-between shadow-xs mb-2">
+                                <div class="d-flex align-items-start gap-2 me-2">
+                                    <span class="badge ${att.badge_class} mt-1">${att.badge}</span>
+                                    <div>
+                                        <div class="fw-bold text-dark fs-6">${att.display_name}</div>
+                                        <div class="text-muted small">${att.desc} (${att.size})</div>
+                                    </div>
+                                </div>
+                                <a href="${att.download_url}" class="btn btn-sm btn-outline-primary px-3 py-1 fw-semibold text-nowrap">
+                                    <i class="fa-solid fa-download me-1"></i> 다운로드
+                                </a>
+                            </div>`;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `<div class="alert alert-danger py-2 small">첨부파일 목록을 불러오지 못했습니다.</div>`;
+                }
+            })
+            .catch(err => {
+                container.innerHTML = `<div class="alert alert-danger py-2 small">서버 통신 중 오류가 발생했습니다.</div>`;
+            });
+    }</script>
 </body>
 </html>
